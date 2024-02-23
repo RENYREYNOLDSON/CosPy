@@ -3,6 +3,7 @@ import customtkinter as CTk
 import os
 import sdl2
 from Render import *
+from Robots import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
 
 class Menu(CTk.CTkFrame):
@@ -116,11 +117,23 @@ class Options(CTk.CTkFrame):
         #Number of robots
         self.robot_text = CTk.CTkLabel(master=self,text="Robot Count",padx=20)
         self.robot_text.grid(row=10,column=0)
-        self.robot_count = CTk.CTkSlider(master=self,corner_radius=0,height=20,number_of_steps=20)
+        self.robot_count = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
+        self.robot_count.insert(0,20)
         self.robot_count.grid(row=10,column=1,columnspan=2,sticky="EW")
 
+        #Render the robots?
+        self.draw_robots = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Show Robots",command=self.master.set_draw_robots)
+        self.draw_robots.grid(row=11,column=1,columnspan=3,sticky="EW")
 
-
+        #Multiple Leaders?
+        self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Multiple Leaders",command=self.master.set_draw_robots)
+        self.multiple_leaders.grid(row=12,column=1,columnspan=3,sticky="EW")
+        #Leaders Follow?
+        self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Leaders Follow",command=self.master.set_draw_robots)
+        self.leaders_follow.grid(row=13,column=1,columnspan=3,sticky="EW")
+        #Threading Used?
+        self.threading = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="CPU Threading",command=self.master.set_draw_robots)
+        self.threading.grid(row=14,column=1,columnspan=3,sticky="EW")
 
 
 
@@ -133,6 +146,10 @@ class App(CTk.CTk):#MAIN APP WINDOW
         w, h = self.winfo_screenwidth(), self.winfo_screenheight()
         self.protocol("WM_DELETE_WINDOW", self.close)
 
+        self.robots_array=[]
+        for i in range(10):
+            self.robots_array.append(Robot(random.randint(20,400),random.randint(20,400)))
+        self.robots_array[0].leader = True
 
         ############# MENU FRAME
         self.bar_frame = Menu(master=self,corner_radius=0,fg_color="#161616")
@@ -157,8 +174,13 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
 
     def refresh(self):
+        #Update Robots
+        for r in self.robots_array:
+            r.deposit(self.renderer)
+            r.move(self.renderer.pixels)
+
         #Update the screen
-        self.renderer.refresh()
+        self.renderer.refresh(self.robots_array)
         #Update framerate text
         self.bar_frame.framerate_text.configure(text="Framerate: "+str(self.renderer.framerate))
 
@@ -171,15 +193,22 @@ class App(CTk.CTk):#MAIN APP WINDOW
         width = int(self.options_frame.width.get())
         height = int(self.options_frame.height.get())
         scale = float(self.options_frame.scale.get())
-
+        robot_count = int(self.options_frame.robot_count.get())
+        draw_robots = self.options_frame.draw_robots.get()
 
         self.embed.destroy()
         self.embed = Frame(master=self,width=width,height=height)
-        #self.embed.grid(columnspan = (2000), rowspan = 1600) # Adds grid
         self.embed.pack(side="left",padx=30)
         self.renderer = Renderer(width,height,scale,self.embed.winfo_id())
+        self.renderer.render_robot = draw_robots
         self.bind("<space>", self.renderer.change_colour)
+        self.robots_array=[]
+        for i in range(robot_count):
+            self.robots_array.append(Robot(random.randint(50,int(width*scale)-50),random.randint(50,int(height*scale)-50)))
+        self.robots_array[0].leader = True
 
+    def set_draw_robots(self):
+        self.renderer.render_robot = not self.renderer.render_robot
 
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
@@ -199,4 +228,4 @@ if __name__ == "__main__":
 # Add all variable options
 # Add robots
 # Add popout window
-# Add robot detection
+# Add threading option for robots

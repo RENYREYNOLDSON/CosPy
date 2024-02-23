@@ -37,7 +37,12 @@ class Renderer:
         # Mouse Position
         self.x, self.y = ctypes.c_int(0), ctypes.c_int(0) # Create two ctypes values
 
-    def refresh(self):
+        # Create a kernel with values based on distance from the center
+        self.kernel = create_colour_kernel(10)
+        self.render_robot=False
+
+
+    def refresh(self,robots_array):
         for event in sdl2.ext.get_events():
             if event.type == sdl2.SDL_QUIT:
                 self.running = False
@@ -51,29 +56,44 @@ class Renderer:
         self.x.value = int(self.x.value*self.scale)
         self.y.value = int(self.y.value*self.scale)
 
-        for hoz in range(int(self.x.value-self.pheromone_size/2),int(self.x.value+self.pheromone_size/2)):
-            for ver in range(int(self.y.value-self.pheromone_size/2),int(self.y.value+self.pheromone_size/2)):
-                if ver>0 and ver<self.surfh and hoz>0 and hoz<self.surfw:
-                    dist = math.sqrt((self.x.value-hoz)**2+(self.y.value-ver)**2)
-                    if dist<self.pheromone_size/2:
-                        pix = self.pixels[hoz][ver]
-                        if dist==0:
-                            add=100
-                        else:
-                            add = 100/dist
-                        self.pixels[hoz][ver]=[min(255*self.pheromone_colour[0],pix[0]+add*self.pheromone_colour[0]),min(255*self.pheromone_colour[1],pix[1]+add*self.pheromone_colour[1]),min(255*self.pheromone_colour[2],pix[2]+add*self.pheromone_colour[2]),pix[3]]
+
+        #self.pixels = apply_colour_kernel(self.pixels,self.kernel,self.y.value,self.x.value,self.pheromone_colour)
+        
         #EVAPORATION
         if self.frame_count%self.evaporation_rate == 0:
-            self.pixels = evaporate(self.pixels) 
+            #self.pixels = evaporate(self.pixels) 
             pass
 
         self.pixels = diffuse(self.pixels)
+
+
+
+
+
+
+
 
         # Blit the surface onto the window's surface
         # Scale the original surface to fit the window size
         scaled_surf = sdl2.SDL_CreateRGBSurface(0, self.w, self.h, 32, 0, 0, 0, 0)
         sdl2.SDL_BlitScaled(self.surf, None, scaled_surf, None)
 
+        #### Draw The Robots
+        if self.render_robot:
+            for r in robots_array:
+                # Define triangle vertices
+                center = (r.x/self.scale, r.y/self.scale)
+                # Define triangle color
+                color = sdl2.ext.Color(r.colour[0],r.colour[1],r.colour[2])
+                draw_triangle(scaled_surf, center,100,r.angle,color)
+                #sdl2.ext.fill(scaled_surf, color, vertices)
+        else:
+            pixels2 = sdl2.ext.pixels3d(scaled_surf)
+            for r in robots_array:
+                pixels2[int(r.x/self.scale)][int(r.y/self.scale)]=[255,255,255,255]
+
+
+        #draw_filled_triangle(self.window, color, vertices)
         # Blit the scaled surface onto the window surface
         sdl2.SDL_BlitSurface(scaled_surf, None, self.window.get_surface(), None)
 
@@ -93,6 +113,34 @@ class Renderer:
     def change_colour(self,e):
         self.pheromone_colour = [random.random(),random.random(),random.random()]
         print("Chnaged")
+
+    def add_pheromone(self,x,y):
+        x_min = max(0,int(x)-20)
+        x_max = min(self.w,int(x)+20)
+
+        y_min = max(0,int(y)-20)
+        y_max = min(self.h,int(y)+20)
+        value_array = np.array([0, 0, 2, 255], dtype=self.pixels.dtype)
+        self.pixels[x_min:x_max,y_min:y_max]+=value_array
+        self.pixels[x_min:x_max, y_min:y_max,2] = np.clip(self.pixels[x_min:x_max, y_min:y_max,2],0, 255)
+
+
+
+        #print(x_min,x_max,y_min,y_max)
+
+        return
+        for hoz in range(int(x-self.pheromone_size/2),int(x+self.pheromone_size/2)):
+            for ver in range(int(y-self.pheromone_size/2),int(y+self.pheromone_size/2)):
+                if ver>0 and ver<self.surfh and hoz>0 and hoz<self.surfw:
+                    dist = math.sqrt((x-hoz)**2+(y-ver)**2)
+                    if dist<self.pheromone_size/2:
+                        pix = self.pixels[hoz][ver]
+                        if dist==0:
+                            add=100
+                        else:
+                            add = 100/dist
+                        self.pixels[hoz][ver]=[min(255*self.pheromone_colour[0],pix[0]+add*self.pheromone_colour[0]),min(255*self.pheromone_colour[1],pix[1]+add*self.pheromone_colour[1]),min(255*self.pheromone_colour[2],pix[2]+add*self.pheromone_colour[2]),pix[3]]
+
 
 
 def evaporate(pixels):
@@ -139,6 +187,90 @@ def diffuse(pixels):
         pixels[:, :, i] = convolve(pixels[:, :, i], diff_kernel, mode='constant', cval=0.0)
 
     return pixels
+
+
+def apply_colour_kernel(array,kernel,x,y,colour):
+
+    """
+    Apply a kernel centered at position (x, y) within the array.
+    """
+
+    kernel_height, kernel_width = kernel.shape
+    array_height, array_width = array.shape[:2]
+
+    # Calculate the starting and ending indices for the kernel
+    start_x = max(0, x - kernel_width // 2)
+    start_y = max(0, y - kernel_height // 2)
+    end_x = min(array_width, x + (kernel_width + 1) // 2)
+    end_y = min(array_height, y + (kernel_height + 1) // 2)
+
+    # Apply the kernel to the specified region
+    for i in range(3):
+        conv_result = convolve(array[start_y:end_y, start_x:end_x, i], kernel)
+        scaled_result = conv_result * colour[i]*100
+        print(scaled_result)
+        array[start_y:end_y, start_x:end_x, i] += scaled_result.astype(array.dtype)
+        #print(array[start_y:end_y, start_x:end_x, i])
+
+    return array#np.clip(result, 0, 255).astype(np.uint8) 
+
+
+def create_colour_kernel(radius):
+    
+    # Calculate the center of the kernel
+    center = (radius, radius)
+
+    # Create a grid of coordinates
+    y, x = np.ogrid[:2*radius, :2*radius]
+
+    # Calculate the distance from each point to the center
+    distances = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+
+    # Create the circular kernel with values decreasing with distance
+    kernel = 1 / (1 + distances)
+
+    return kernel
+
+"""
+def draw_triangle(surface, x1, y1, x2, y2, x3, y3, color):
+    # Draw lines to form the triangle
+    sdl2.ext.line(surface, color, (x1, y1,x2, y2),width=1)
+    sdl2.ext.line(surface, color, (x2, y2,x3, y3),width=1)
+    sdl2.ext.line(surface, color, (x3, y3,x1, y1),width=1)
+"""
+
+def rotate_point(center, point, angle):
+    """
+    Rotate a point around a center by a given angle (in degrees).
+    """
+    cx, cy = center
+    px, py = point
+    angle_rad = angle+math.pi/2
+    qx = cx + math.cos(angle_rad) * (px - cx) - math.sin(angle_rad) * (py - cy)
+    qy = cy + math.sin(angle_rad) * (px - cx) + math.cos(angle_rad) * (py - cy)
+    return int(qx), int(qy)
+
+def draw_triangle(surface, center, size, angle, color):
+    # Calculate the coordinates of the vertices of the equilateral triangle
+    base_len = size / math.sqrt(3)
+    half_base = base_len / 2
+    height = size * math.sqrt(3) / 2
+    top_vertex = (center[0], center[1] - height / 2)
+    left_vertex = (center[0] - half_base, center[1] + height / 2)
+    right_vertex = (center[0] + half_base, center[1] + height / 2)
+
+    # Rotate the vertices by the given angle around the center
+    top_vertex = rotate_point(center, top_vertex, angle)
+    left_vertex = rotate_point(center, left_vertex, angle)
+    right_vertex = rotate_point(center, right_vertex, angle)
+
+    # Draw lines to form the triangle
+    sdl2.ext.line(surface, color, (top_vertex[0],top_vertex[1],left_vertex[0],left_vertex[1]), width=1)
+    sdl2.ext.line(surface, color, (left_vertex[0],left_vertex[1],right_vertex[0],right_vertex[1]), width=1)
+    sdl2.ext.line(surface, color, (right_vertex[0],right_vertex[1],top_vertex[0],top_vertex[1]), width=1)
+
+
+
 
 if __name__ == "__main__":
     r = Renderer(1000,800,0.25,None)
