@@ -31,13 +31,11 @@ class Menu(CTk.CTkFrame):
         #self.file._dropdown_menu.insert_separator(15)
         self.file.pack(side="left")
 
-        self.start_button = CTk.CTkButton(master=self,text="Reset",corner_radius=0,command=self.master.reset)
+        self.start_button = CTk.CTkButton(master=self,text="Reset",corner_radius=0,command=self.master.reset,fg_color="transparent")
         self.start_button.pack(side="right")
-        self.start_button = CTk.CTkButton(master=self,text="Stop",corner_radius=0)
+        self.start_button = CTk.CTkButton(master=self,text="⏹",corner_radius=0,width=30,fg_color="transparent")
         self.start_button.pack(side="right")
-        self.start_button = CTk.CTkButton(master=self,text="Pause",corner_radius=0)
-        self.start_button.pack(side="right")
-        self.start_button = CTk.CTkButton(master=self,text="Start",corner_radius=0)
+        self.start_button = CTk.CTkButton(master=self,text="▶⏸",corner_radius=0,width=30,fg_color="transparent",command=self.master.set_running)
         self.start_button.pack(side="right")
 
 
@@ -71,12 +69,15 @@ class Options(CTk.CTkFrame):
         self.deposit_text = CTk.CTkLabel(master=self,text="Deposit Size",padx=20)
         self.deposit_text.grid(row=2,column=0)
         self.deposit_size = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.deposit_size.insert(0,50)
         self.deposit_size.grid(row=2,column=1,columnspan=2,sticky="NSEW")
         #Deposit Rate
         self.deposit_text = CTk.CTkLabel(master=self,text="Deposit Rate",padx=20)
         self.deposit_text.grid(row=3,column=0)
         self.deposit_rate = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.deposit_rate.insert(0,2)
         self.deposit_rate.grid(row=3,column=1,columnspan=2,sticky="NSEW")
+        
         #Evaporation Rate
         self.evap_text = CTk.CTkLabel(master=self,text="Evaporation Rate",padx=20)
         self.evap_text.grid(row=4,column=0)
@@ -126,13 +127,13 @@ class Options(CTk.CTkFrame):
         self.draw_robots.grid(row=11,column=1,columnspan=3,sticky="EW")
 
         #Multiple Leaders?
-        self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Multiple Leaders",command=self.master.set_draw_robots)
+        self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Multiple Leaders",command=self.master.set_multiple_leaders)
         self.multiple_leaders.grid(row=12,column=1,columnspan=3,sticky="EW")
         #Leaders Follow?
-        self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Leaders Follow",command=self.master.set_draw_robots)
+        self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Leaders Follow")
         self.leaders_follow.grid(row=13,column=1,columnspan=3,sticky="EW")
         #Threading Used?
-        self.threading = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="CPU Threading",command=self.master.set_draw_robots)
+        self.threading = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="CPU Threading")
         self.threading.grid(row=14,column=1,columnspan=3,sticky="EW")
 
 
@@ -148,8 +149,12 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
         self.robots_array=[]
         for i in range(10):
-            self.robots_array.append(Robot(random.randint(20,400),random.randint(20,400)))
+            self.robots_array.append(Robot(random.randint(20,400),random.randint(20,300)))
         self.robots_array[0].leader = True
+        self.multiple_leaders=False
+        self.leaders_follow=False
+        self.running=False
+
 
         ############# MENU FRAME
         self.bar_frame = Menu(master=self,corner_radius=0,fg_color="#161616")
@@ -168,7 +173,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.embed = Frame(master=self,width=2000,height=1550)
         #self.embed.grid(columnspan = (2000), rowspan = 1600) # Adds grid
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(2000,1550,0.25,self.embed.winfo_id())
+        self.renderer = Renderer(2000,1550,0.25,self.embed.winfo_id(),50,2)
         self.bind("<space>", self.renderer.change_colour)
         ##############
 
@@ -185,6 +190,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.bar_frame.framerate_text.configure(text="Framerate: "+str(self.renderer.framerate))
 
     def close(self):
+        self.running=True
         self.renderer.close()
         self.destroy()
 
@@ -195,11 +201,13 @@ class App(CTk.CTk):#MAIN APP WINDOW
         scale = float(self.options_frame.scale.get())
         robot_count = int(self.options_frame.robot_count.get())
         draw_robots = self.options_frame.draw_robots.get()
+        deposit_size = self.options_frame.deposit_size.get()
+        deposit_amount = self.options_frame.deposit_rate.get()
 
         self.embed.destroy()
         self.embed = Frame(master=self,width=width,height=height)
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(width,height,scale,self.embed.winfo_id())
+        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount)
         self.renderer.render_robot = draw_robots
         self.bind("<space>", self.renderer.change_colour)
         self.robots_array=[]
@@ -210,6 +218,27 @@ class App(CTk.CTk):#MAIN APP WINDOW
     def set_draw_robots(self):
         self.renderer.render_robot = not self.renderer.render_robot
 
+    def set_multiple_leaders(self):
+        if self.multiple_leaders:
+            #Now only 1 leader#
+            for r in self.robots_array:
+                r.leader=False
+            self.robots_array[0].leader=True
+        else:
+            #Now multiple leaders
+            for r in self.robots_array:
+                r.leader=True
+        self.multiple_leaders = not self.multiple_leaders
+
+    def set_leaders_follow(self):
+        self.leaders_follow = not self.leaders_follow
+        for r in self.robots_array:
+            r.leaders_follow = self.leaders_follow
+
+    def set_running(self):
+        self.running = not self.running
+
+
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
     normal_font = ("David",16)
@@ -217,15 +246,20 @@ if __name__ == "__main__":
     if os.path.exists("theme.json"):
         CTk.set_default_color_theme("theme.json")
     app=App()
+    icon_path = os.path.join(os.path.dirname(__file__) , "icon.ico")
+    app.iconbitmap(icon_path)
     app.after(0, lambda:app.state('zoomed'))
     while True:
-        app.refresh()
+        if app.running == True:
+            app.refresh()
         app.update()
 
+#DONE
+# Optimize drawing of pheromones so that the size can be changed
+# Add robots
 
 #TODO
-# Optimize drawing of pheromones so that the size can be changed
 # Add all variable options
-# Add robots
 # Add popout window
 # Add threading option for robots
+# Make it move 1 frame when paused!

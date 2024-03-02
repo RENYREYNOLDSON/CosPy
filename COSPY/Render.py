@@ -10,15 +10,18 @@ from scipy.ndimage import convolve
 
 
 class Renderer:
-    def __init__(self,w,h,scale,embed):
+    def __init__(self,w,h,scale,embed,pheromone_size,pheromone_amount):
         self.w = w
         self.h = h
         self.scale=scale
         self.surfw = int(w*self.scale)
         self.surfh = int(h*self.scale)
-        self.pheromone_size = 50
+        self.pheromone_size = pheromone_size
+        self.pheromone_amount = pheromone_amount
         self.evaporation_rate = 4 #Number of ticks for each evaporation
-        self.pheromone_colour = [0.5,0.4,1]
+        self.pheromone_colour = [0.5,0.4,1,0]
+        self.pheromone_colour = [x * float(self.pheromone_amount) for x in self.pheromone_colour]
+
         self.start_time = time.time()
         self.frame_count = 0
         self.count=0
@@ -61,17 +64,10 @@ class Renderer:
         
         #EVAPORATION
         if self.frame_count%self.evaporation_rate == 0:
-            #self.pixels = evaporate(self.pixels) 
+            self.pixels = evaporate(self.pixels) 
             pass
 
         self.pixels = diffuse(self.pixels)
-
-
-
-
-
-
-
 
         # Blit the surface onto the window's surface
         # Scale the original surface to fit the window size
@@ -111,35 +107,23 @@ class Renderer:
         sdl2.ext.quit()
 
     def change_colour(self,e):
-        self.pheromone_colour = [random.random(),random.random(),random.random()]
+        self.pheromone_colour = [random.random(),random.random(),random.random(),0]
         print("Chnaged")
 
     def add_pheromone(self,x,y):
-        x_min = max(0,int(x)-20)
-        x_max = min(self.w,int(x)+20)
-
-        y_min = max(0,int(y)-20)
-        y_max = min(self.h,int(y)+20)
-        value_array = np.array([0, 0, 2, 255], dtype=self.pixels.dtype)
-        self.pixels[x_min:x_max,y_min:y_max]+=value_array
-        self.pixels[x_min:x_max, y_min:y_max,2] = np.clip(self.pixels[x_min:x_max, y_min:y_max,2],0, 255)
-
-
-
-        #print(x_min,x_max,y_min,y_max)
-
+        r = int(self.pheromone_size/2)
+        x_min = max(0,int(x)-r)
+        x_max = min(self.w,int(x)+r)
+        y_min = max(0,int(y)-r)
+        y_max = min(self.h,int(y)+r)
+        value_array = np.array(self.pheromone_colour, dtype=self.pixels.dtype)
+        # Ensure addition won't exceed 255
+        max_value = 255 - value_array
+        add_region = self.pixels[x_min:x_max, y_min:y_max]
+        add_region = np.minimum(add_region, max_value)
+        # Add the value array to the specified region
+        self.pixels[x_min:x_max, y_min:y_max] = add_region + value_array
         return
-        for hoz in range(int(x-self.pheromone_size/2),int(x+self.pheromone_size/2)):
-            for ver in range(int(y-self.pheromone_size/2),int(y+self.pheromone_size/2)):
-                if ver>0 and ver<self.surfh and hoz>0 and hoz<self.surfw:
-                    dist = math.sqrt((x-hoz)**2+(y-ver)**2)
-                    if dist<self.pheromone_size/2:
-                        pix = self.pixels[hoz][ver]
-                        if dist==0:
-                            add=100
-                        else:
-                            add = 100/dist
-                        self.pixels[hoz][ver]=[min(255*self.pheromone_colour[0],pix[0]+add*self.pheromone_colour[0]),min(255*self.pheromone_colour[1],pix[1]+add*self.pheromone_colour[1]),min(255*self.pheromone_colour[2],pix[2]+add*self.pheromone_colour[2]),pix[3]]
 
 
 

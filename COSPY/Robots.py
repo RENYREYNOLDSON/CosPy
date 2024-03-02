@@ -9,11 +9,12 @@ class Robot:
         self.angle=0
         self.radius=25
         self.colour=[255,255,255]
-        self.leader=True
+        self.leader=False
+        self.leaders_follow=False
     def move(self,pixels):
         #Go towards pheromone
         #Check 4 positions and turn more towards strongest pheromone
-        if 2>1:#self.leader:
+        if self.leader and not self.leaders_follow:#self.leader:
             self.angle+=random.uniform(-0.4,0.4)
         else:
             #Check 2 positions first
