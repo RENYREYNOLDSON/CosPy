@@ -82,6 +82,7 @@ class Options(CTk.CTkFrame):
         self.evap_text = CTk.CTkLabel(master=self,text="Evaporation Rate",padx=20)
         self.evap_text.grid(row=4,column=0)
         self.evaporation_rate = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.evaporation_rate.insert(0,4)
         self.evaporation_rate.grid(row=4,column=1,columnspan=2,sticky="NSEW")
         #Diffusion Rate
         self.diffusion_text = CTk.CTkLabel(master=self,text="Diffusion Rate",padx=20)
@@ -154,6 +155,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.multiple_leaders=False
         self.leaders_follow=False
         self.running=False
+        self.simulation_speed = 5
+        self.time_step=0
 
 
         ############# MENU FRAME
@@ -173,7 +176,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.embed = Frame(master=self,width=2000,height=1550)
         #self.embed.grid(columnspan = (2000), rowspan = 1600) # Adds grid
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(2000,1550,0.25,self.embed.winfo_id(),50,2)
+        self.renderer = Renderer(2000,1550,0.25,self.embed.winfo_id(),50,2,4)
         self.bind("<space>", self.renderer.change_colour)
         ##############
 
@@ -183,11 +186,14 @@ class App(CTk.CTk):#MAIN APP WINDOW
         for r in self.robots_array:
             r.deposit(self.renderer)
             r.move(self.renderer.pixels)
-
         #Update the screen
-        self.renderer.refresh(self.robots_array)
-        #Update framerate text
-        self.bar_frame.framerate_text.configure(text="Framerate: "+str(self.renderer.framerate))
+        self.renderer.update_environment()
+
+        if self.time_step%self.simulation_speed==0:
+            self.renderer.refresh(self.robots_array)
+            #Update framerate text
+            self.bar_frame.framerate_text.configure(text="Framerate: "+str(self.renderer.framerate))
+        self.time_step+=1
 
     def close(self):
         self.running=True
@@ -203,17 +209,19 @@ class App(CTk.CTk):#MAIN APP WINDOW
         draw_robots = self.options_frame.draw_robots.get()
         deposit_size = self.options_frame.deposit_size.get()
         deposit_amount = self.options_frame.deposit_rate.get()
+        evaporation_rate = int(self.options_frame.evaporation_rate.get())
 
         self.embed.destroy()
         self.embed = Frame(master=self,width=width,height=height)
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount)
+        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount,evaporation_rate)
         self.renderer.render_robot = draw_robots
         self.bind("<space>", self.renderer.change_colour)
         self.robots_array=[]
         for i in range(robot_count):
             self.robots_array.append(Robot(random.randint(50,int(width*scale)-50),random.randint(50,int(height*scale)-50)))
         self.robots_array[0].leader = True
+
 
     def set_draw_robots(self):
         self.renderer.render_robot = not self.renderer.render_robot
@@ -259,7 +267,17 @@ if __name__ == "__main__":
 # Add robots
 
 #TODO
+# LOOK at maths behind cosphi
 # Add all variable options
 # Add popout window
 # Add threading option for robots
 # Make it move 1 frame when paused!
+# Add robot speed
+# Add Bounce?
+# Add simulation speed
+# Test on smaller screen and make resizable
+# Only robot logic is in the robot code!
+        
+#Stats to show at top:
+# Time Steps
+# Cohesion maybe

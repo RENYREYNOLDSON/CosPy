@@ -10,7 +10,7 @@ from scipy.ndimage import convolve
 
 
 class Renderer:
-    def __init__(self,w,h,scale,embed,pheromone_size,pheromone_amount):
+    def __init__(self,w,h,scale,embed,pheromone_size,pheromone_amount,evaporation_rate):
         self.w = w
         self.h = h
         self.scale=scale
@@ -18,7 +18,7 @@ class Renderer:
         self.surfh = int(h*self.scale)
         self.pheromone_size = pheromone_size
         self.pheromone_amount = pheromone_amount
-        self.evaporation_rate = 4 #Number of ticks for each evaporation
+        self.evaporation_rate = evaporation_rate#Number of ticks for each evaporation
         self.pheromone_colour = [0.5,0.4,1,0]
         self.pheromone_colour = [x * float(self.pheromone_amount) for x in self.pheromone_colour]
 
@@ -41,9 +41,15 @@ class Renderer:
         self.x, self.y = ctypes.c_int(0), ctypes.c_int(0) # Create two ctypes values
 
         # Create a kernel with values based on distance from the center
-        self.kernel = create_colour_kernel(10)
         self.render_robot=False
 
+    def update_environment(self):
+        #EVAPORATION
+        if self.frame_count%self.evaporation_rate == 0:
+            self.pixels = evaporate(self.pixels) 
+            #pass
+            self.pixels = diffuse(self.pixels)
+        return
 
     def refresh(self,robots_array):
         for event in sdl2.ext.get_events():
@@ -58,16 +64,6 @@ class Renderer:
         buttonstate = sdl2.mouse.SDL_GetMouseState(ctypes.byref(self.x), ctypes.byref(self.y))
         self.x.value = int(self.x.value*self.scale)
         self.y.value = int(self.y.value*self.scale)
-
-
-        #self.pixels = apply_colour_kernel(self.pixels,self.kernel,self.y.value,self.x.value,self.pheromone_colour)
-        
-        #EVAPORATION
-        if self.frame_count%self.evaporation_rate == 0:
-            self.pixels = evaporate(self.pixels) 
-            pass
-
-        self.pixels = diffuse(self.pixels)
 
         # Blit the surface onto the window's surface
         # Scale the original surface to fit the window size
@@ -108,6 +104,7 @@ class Renderer:
 
     def change_colour(self,e):
         self.pheromone_colour = [random.random(),random.random(),random.random(),0]
+        self.pheromone_colour = [x * float(self.pheromone_amount) for x in self.pheromone_colour]
         print("Chnaged")
 
     def add_pheromone(self,x,y):
@@ -154,11 +151,7 @@ def diffusion_kernel(size):
 
 def diffuse(pixels):
     # Define a blur kernel
-    blur_kernel = np.array([[1, 1, 1],
-                            [1, 1, 1],
-                            [1, 1, 1]]) / 9.0  # Averaging kernel
-    
-        # Define the size and sigma for the Gaussian kernel
+    # Define the size and sigma for the Gaussian kernel
     kernel_size = 3  # Adjust this according to the desired kernel size
     sigma = 1.0     # Adjust this according to the desired standard deviation
 
@@ -199,29 +192,6 @@ def apply_colour_kernel(array,kernel,x,y,colour):
     return array#np.clip(result, 0, 255).astype(np.uint8) 
 
 
-def create_colour_kernel(radius):
-    
-    # Calculate the center of the kernel
-    center = (radius, radius)
-
-    # Create a grid of coordinates
-    y, x = np.ogrid[:2*radius, :2*radius]
-
-    # Calculate the distance from each point to the center
-    distances = np.sqrt((x - center[0])**2 + (y - center[1])**2)
-
-    # Create the circular kernel with values decreasing with distance
-    kernel = 1 / (1 + distances)
-
-    return kernel
-
-"""
-def draw_triangle(surface, x1, y1, x2, y2, x3, y3, color):
-    # Draw lines to form the triangle
-    sdl2.ext.line(surface, color, (x1, y1,x2, y2),width=1)
-    sdl2.ext.line(surface, color, (x2, y2,x3, y3),width=1)
-    sdl2.ext.line(surface, color, (x3, y3,x1, y1),width=1)
-"""
 
 def rotate_point(center, point, angle):
     """

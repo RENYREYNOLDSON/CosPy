@@ -50,7 +50,7 @@ class Robot:
 
     def deposit(self,renderer):
         if self.leader:
-            renderer.add_pheromone(self.x+self.radius*renderer.scale,self.y+self.radius*renderer.scale)
+            renderer.add_pheromone(self.x,self.y)
 
     #draw
     #move
