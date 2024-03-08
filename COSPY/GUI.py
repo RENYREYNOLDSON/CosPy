@@ -6,6 +6,13 @@ from Render import *
 from Robots import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
 
+class Algorithm_Editor(CTk.CTkFrame):
+    #Constructor 
+    def __init__(self,master, **kwargs):
+        super().__init__(master, **kwargs)
+        #FRAME SETUP
+
+        
 
 class Menu(CTk.CTkFrame):
     #Constructor 
@@ -33,9 +40,9 @@ class Menu(CTk.CTkFrame):
         self.file.pack(side="left")
 
         # Editor Buttons
-        self.alg_edit_button = CTk.CTkButton(master=self,text="Algorithm Editor",corner_radius=0,command=self.master.reset,fg_color="transparent")
+        self.alg_edit_button = CTk.CTkButton(master=self,text="Algorithm Editor",corner_radius=0,fg_color="transparent")
         self.alg_edit_button.pack(side="left")
-        self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,command=self.master.reset,fg_color="transparent")
+        self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,fg_color="transparent")
         self.env_edit_button.pack(side="left")
 
         self.start_button = CTk.CTkButton(master=self,text="⟳",corner_radius=0,width=40,command=self.master.reset,fg_color="transparent")
@@ -148,19 +155,27 @@ class Options(CTk.CTkFrame):
         self.robot_count.grid(row=11,column=1,columnspan=2,sticky="EW")
 
 
+        #Proportion of leader robots
+        self.leader_text = CTk.CTkLabel(master=self,text="Leaders Proportion",padx=20)
+        self.leader_text.grid(row=12,column=0)
+        self.leader = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
+        self.leader.insert(0,0.1)
+        self.leader.grid(row=12,column=1,columnspan=2,sticky="EW")
+
+
         #Render the robots?
         self.draw_robots = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Show Robots",command=self.master.set_draw_robots)
-        self.draw_robots.grid(row=12,column=1,columnspan=3,sticky="EW")
+        self.draw_robots.grid(row=13,column=1,columnspan=3,sticky="EW")
 
         #Multiple Leaders?
         self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Multiple Leaders",command=self.master.set_multiple_leaders)
-        self.multiple_leaders.grid(row=13,column=1,columnspan=3,sticky="EW")
+        self.multiple_leaders.grid(row=14,column=1,columnspan=3,sticky="EW")
         #Leaders Follow?
         self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Leaders Follow")
-        self.leaders_follow.grid(row=14,column=1,columnspan=3,sticky="EW")
+        self.leaders_follow.grid(row=15,column=1,columnspan=3,sticky="EW")
         #Threading Used?
         self.threading = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="CPU Threading")
-        self.threading.grid(row=15,column=1,columnspan=3,sticky="EW")
+        self.threading.grid(row=16,column=1,columnspan=3,sticky="EW")
 
         #CosPy Logo
         font = ("Arial",100)
@@ -202,6 +217,18 @@ class App(CTk.CTk):#MAIN APP WINDOW
         ############# OPTIONS FRAME
         self.options_frame = Options(master=self,corner_radius=0)
         self.options_frame.pack(side="right",fill="both")
+        #############
+
+        ############# ALGORITHM EDITOR FRAME
+        self.algorithm_frame = Algorithm_Editor(master=self,corner_radius=0)
+        #self.algorithm_frame.pack(side="right",fill="both")
+
+        #############
+
+
+        ############# ENVIRONMENT EDITOR FRAME
+
+
         #############
 
 
@@ -248,6 +275,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
         evaporation_rate = int(self.options_frame.evaporation_rate.get())
         diffusion_rate = int(self.options_frame.diffusion.get())
         wind_speed = (int(self.options_frame.windx.get()),int(self.options_frame.windy.get()))
+        leaders = float(self.options_frame.leader.get())
+
 
         self.embed.destroy()
         self.embed = Frame(master=self,width=width,height=height)
@@ -258,7 +287,13 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.robots_array=[]
         for i in range(robot_count):
             self.robots_array.append(Robot(random.randint(50,int(width*scale)-50),random.randint(50,int(height*scale)-50)))
-        self.robots_array[0].leader = True
+        if self.multiple_leaders:
+            leaders = int(leaders*robot_count)
+            for i in range(leaders):
+                self.robots_array[i].leader = True
+
+        else:
+            self.robots_array[0].leader = True
 
 
 
@@ -360,6 +395,7 @@ if __name__ == "__main__":
 # Add robot speed
 # Add FPS limit
 # Add saving
+# FIX MULTIPLE LEADER SYSTEM
 
 
 

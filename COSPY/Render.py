@@ -62,7 +62,8 @@ class Renderer:
         if self.frame_count%self.diffusion_rate == 0:
             self.pixels = diffuse(self.pixels)
         #WIND
-        self.pixels[0:self.surfw,0:self.surfh] = np.roll(self.pixels[0:self.surfw,0:self.surfh],self.wind_speed,axis=(0,1))
+        if self.wind_speed!=(0,0):
+            self.pixels[0:self.surfw,0:self.surfh] = np.roll(self.pixels[0:self.surfw,0:self.surfh],self.wind_speed,axis=(0,1))
 
         return
 
