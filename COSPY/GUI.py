@@ -6,6 +6,7 @@ from Render import *
 from Robots import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
 
+
 class Menu(CTk.CTkFrame):
     #Constructor 
     def __init__(self,master, **kwargs):
@@ -22,7 +23,7 @@ class Menu(CTk.CTkFrame):
         self.file._dropdown_menu.add_command(label="New Test", accelerator="Ctrl+N")
         #self.file._dropdown_menu.insert_cascade(3,menu=menu_recent, label='Open Recent')
         self.file._dropdown_menu.add_command(label="Open Test", accelerator="Ctrl+O")
-        self.file._dropdown_menu.add_command(label="Save Test", accelerator="Ctrl+S")
+        self.file._dropdown_menu.add_command(label="Save Test", accelerator="Ctrl+S",command=master.save_test)
 
 
         #self.file._dropdown_menu.insert_separator(1)
@@ -31,16 +32,30 @@ class Menu(CTk.CTkFrame):
         #self.file._dropdown_menu.insert_separator(15)
         self.file.pack(side="left")
 
-        self.start_button = CTk.CTkButton(master=self,text="Reset",corner_radius=0,command=self.master.reset,fg_color="transparent")
-        self.start_button.pack(side="right")
-        self.start_button = CTk.CTkButton(master=self,text="⏹",corner_radius=0,width=30,fg_color="transparent")
-        self.start_button.pack(side="right")
-        self.start_button = CTk.CTkButton(master=self,text="▶⏸",corner_radius=0,width=30,fg_color="transparent",command=self.master.set_running)
-        self.start_button.pack(side="right")
+        # Editor Buttons
+        self.alg_edit_button = CTk.CTkButton(master=self,text="Algorithm Editor",corner_radius=0,command=self.master.reset,fg_color="transparent")
+        self.alg_edit_button.pack(side="left")
+        self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,command=self.master.reset,fg_color="transparent")
+        self.env_edit_button.pack(side="left")
 
+        self.start_button = CTk.CTkButton(master=self,text="⟳",corner_radius=0,width=40,command=self.master.reset,fg_color="transparent")
+        self.start_button.pack(side="right")
+        self.record_button = CTk.CTkButton(master=self,text="⏺",corner_radius=0,width=40,fg_color="transparent",command=self.master.toggle_recording)
+        self.record_button.pack(side="right")
+        self.start_button = CTk.CTkButton(master=self,text="▶⏸",corner_radius=0,width=40,fg_color="transparent",command=self.master.set_running)
+        self.start_button.pack(side="right")
+        #Simulation speed
+        self.speed_slider = CTk.CTkSlider(master=self,number_of_steps=3,command=master.update_speed)
+        self.speed_slider.set(0)
+        self.speed_slider.pack(side="right")
+        self.speed_label = CTk.CTkLabel(master=self,text="Speed: x1")
+        self.speed_label.pack(side="right")
 
-        self.framerate_text = CTk.CTkLabel(master=self,text="Framerate: ")
-        self.framerate_text.pack(side="right")
+        self.framerate_text = CTk.CTkLabel(master=self,text="Framerate: ",width=100,anchor="w",text_color="grey")
+        self.framerate_text.pack(side="left",padx=(200,0))
+
+        self.timestep_text = CTk.CTkLabel(master=self,text="Time Step: 0",text_color="grey")
+        self.timestep_text.pack(side="left")
 
 
 
@@ -88,14 +103,17 @@ class Options(CTk.CTkFrame):
         self.diffusion_text = CTk.CTkLabel(master=self,text="Diffusion Rate",padx=20)
         self.diffusion_text.grid(row=5,column=0)
         self.diffusion = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.diffusion.insert(0,2)
         self.diffusion.grid(row=5,column=1,columnspan=2,sticky="NSEW")
         #Wind Rate
         self.wind_text = CTk.CTkLabel(master=self,text="Wind Rate",padx=20)
         self.wind_text.grid(row=6,column=0)
         self.windx = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
         self.windx.grid(row=6,column=1)
+        self.windx.insert(0,0)
         self.windy = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
         self.windy.grid(row=6,column=2)
+        self.windy.insert(0,0)
 
         #Blending Mode
         self.blending_text = CTk.CTkLabel(master=self,text="Blending Mode",padx=20)
@@ -114,28 +132,41 @@ class Options(CTk.CTkFrame):
         self.formation_text.grid(row=9,column=0)
         self.formation = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Random","Grid"])
         self.formation.grid(row=9,column=1,columnspan=2,sticky="NSEW")
+        
+        #Boundary Function
+        self.boundary_text = CTk.CTkLabel(master=self,text="Boundary Function",padx=20)
+        self.boundary_text.grid(row=10,column=0)
+        self.boundary_function = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Bounce","Wrap","Stop"],command=self.master.set_boundary_function)
+        self.boundary_function.grid(row=10,column=1,columnspan=2,sticky="NSEW")
 
 
         #Number of robots
         self.robot_text = CTk.CTkLabel(master=self,text="Robot Count",padx=20)
-        self.robot_text.grid(row=10,column=0)
+        self.robot_text.grid(row=11,column=0)
         self.robot_count = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
         self.robot_count.insert(0,20)
-        self.robot_count.grid(row=10,column=1,columnspan=2,sticky="EW")
+        self.robot_count.grid(row=11,column=1,columnspan=2,sticky="EW")
+
 
         #Render the robots?
         self.draw_robots = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Show Robots",command=self.master.set_draw_robots)
-        self.draw_robots.grid(row=11,column=1,columnspan=3,sticky="EW")
+        self.draw_robots.grid(row=12,column=1,columnspan=3,sticky="EW")
 
         #Multiple Leaders?
         self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Multiple Leaders",command=self.master.set_multiple_leaders)
-        self.multiple_leaders.grid(row=12,column=1,columnspan=3,sticky="EW")
+        self.multiple_leaders.grid(row=13,column=1,columnspan=3,sticky="EW")
         #Leaders Follow?
         self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="Leaders Follow")
-        self.leaders_follow.grid(row=13,column=1,columnspan=3,sticky="EW")
+        self.leaders_follow.grid(row=14,column=1,columnspan=3,sticky="EW")
         #Threading Used?
         self.threading = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="CPU Threading")
-        self.threading.grid(row=14,column=1,columnspan=3,sticky="EW")
+        self.threading.grid(row=15,column=1,columnspan=3,sticky="EW")
+
+        #CosPy Logo
+        font = ("Arial",100)
+        self.logo = CTk.CTkLabel(master=self,text="CosPy",text_color="grey",font=font)
+        self.logo.grid(row=20,column=0,columnspan=3,rowspan=20)
+
 
 
 
@@ -155,8 +186,11 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.multiple_leaders=False
         self.leaders_follow=False
         self.running=False
-        self.simulation_speed = 5
+        self.recording=False
+        self.simulation_speed = 1
         self.time_step=0
+
+        
 
 
         ############# MENU FRAME
@@ -176,8 +210,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.embed = Frame(master=self,width=2000,height=1550)
         #self.embed.grid(columnspan = (2000), rowspan = 1600) # Adds grid
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(2000,1550,0.25,self.embed.winfo_id(),50,2,4)
-        self.bind("<space>", self.renderer.change_colour)
+        self.reset()
         ##############
 
 
@@ -192,7 +225,9 @@ class App(CTk.CTk):#MAIN APP WINDOW
         if self.time_step%self.simulation_speed==0:
             self.renderer.refresh(self.robots_array)
             #Update framerate text
-            self.bar_frame.framerate_text.configure(text="Framerate: "+str(self.renderer.framerate))
+            self.bar_frame.framerate_text.configure(text="Framerate: "+str(int(self.renderer.framerate)))
+        #Update time step text
+        self.bar_frame.timestep_text.configure(text="Time Step: "+str(self.time_step))
         self.time_step+=1
 
     def close(self):
@@ -202,6 +237,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
     def reset(self):
         #GET VARIABLES FROM OPTIONS
+        self.time_step = 0
         width = int(self.options_frame.width.get())
         height = int(self.options_frame.height.get())
         scale = float(self.options_frame.scale.get())
@@ -210,17 +246,20 @@ class App(CTk.CTk):#MAIN APP WINDOW
         deposit_size = self.options_frame.deposit_size.get()
         deposit_amount = self.options_frame.deposit_rate.get()
         evaporation_rate = int(self.options_frame.evaporation_rate.get())
+        diffusion_rate = int(self.options_frame.diffusion.get())
+        wind_speed = (int(self.options_frame.windx.get()),int(self.options_frame.windy.get()))
 
         self.embed.destroy()
         self.embed = Frame(master=self,width=width,height=height)
         self.embed.pack(side="left",padx=30)
-        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount,evaporation_rate)
+        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount,evaporation_rate,diffusion_rate,wind_speed)
         self.renderer.render_robot = draw_robots
         self.bind("<space>", self.renderer.change_colour)
         self.robots_array=[]
         for i in range(robot_count):
             self.robots_array.append(Robot(random.randint(50,int(width*scale)-50),random.randint(50,int(height*scale)-50)))
         self.robots_array[0].leader = True
+
 
 
     def set_draw_robots(self):
@@ -246,6 +285,43 @@ class App(CTk.CTk):#MAIN APP WINDOW
     def set_running(self):
         self.running = not self.running
 
+    #Sets the boundary function for the agents
+    def set_boundary_function(self,event):
+        for r in self.robots_array:
+            r.edge_mode = event
+
+    #Updates the speed by using the slider
+    def update_speed(self,event):
+        thresholds = [0.25,0.5,0.75,1]
+        self.simulation_speed = [1, 2, 4, 8][next(i for i, v in enumerate(thresholds) if event <= v)]
+        self.bar_frame.speed_label.configure(text="Speed: x"+str(self.simulation_speed))
+
+    #Toggle the recording
+    def toggle_recording(self):
+        if self.recording:
+            self.bar_frame.record_button._fg_color="transparent"
+            #Save video
+        else:
+            self.bar_frame.record_button._fg_color="red"
+
+        self.recording = not self.recording
+
+    #Save the Test
+    def save_test(self):
+        pass
+        #Open file saver
+        #Create save class
+        #Save pickle file
+
+    #Load the Test
+    def load_test(self):
+        pass
+        #Open file explorer 
+        #Get file contents
+        #Set input values and refresh
+        
+    
+
 
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
@@ -265,16 +341,28 @@ if __name__ == "__main__":
 #DONE
 # Optimize drawing of pheromones so that the size can be changed
 # Add robots
+# Add simulation speed
+# Add Bounce
+# Add wrap around
 
 #TODO
+# Add environment overlays and constructor! These can be any colour. A set of block objects, draw once onto surface then redraw.
+# Add a random maze generator
+# Add create video mode
+# Add robot speed
+# Create a layer system to have multiple pheromones and envs
+# Add iterations system, (Use Iterations?)
 # LOOK at maths behind cosphi
 # Add all variable options
 # Add popout window
 # Add threading option for robots
 # Make it move 1 frame when paused!
 # Add robot speed
-# Add Bounce?
-# Add simulation speed
+# Add FPS limit
+# Add saving
+
+
+
 # Test on smaller screen and make resizable
 # Only robot logic is in the robot code!
         
