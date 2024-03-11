@@ -21,7 +21,7 @@ class Renderer:
         self.evaporation_rate = evaporation_rate#Number of ticks for each evaporation
         self.diffusion_rate = diffusion_rate
         self.wind_speed = wind_speed
-        self.pheromone_colour = [0.5,0.4,1,0]
+        self.pheromone_colour = [0,0,1,0]
         self.pheromone_colour = [x * float(self.pheromone_amount) for x in self.pheromone_colour]
         self.show_walls = False
         self.start_time = time.time()
@@ -30,6 +30,7 @@ class Renderer:
         self.running = True
         self.embed = embed
         self.framerate=0
+        self.temperature_array = create_temperature_array(self.surfh,self.surfw)
         sdl2.ext.init()
         self.window = sdl2.ext.window.Window("d",(self.w,self.h))
 
@@ -38,6 +39,7 @@ class Renderer:
             self.window.window = sdl2.SDL_CreateWindowFrom(embed)
         self.surf = sdl2.SDL_CreateRGBSurface(0,self.surfw,self.surfh,32,0,0,0,0)
         self.pixels = sdl2.ext.pixels3d(self.surf)
+        self.pixels+=self.temperature_array
 
         #Create environment surface!
         self.env_surf = sdl2.SDL_CreateRGBSurface(0,self.surfw,self.surfh,32,0,0,0,0)
@@ -64,7 +66,6 @@ class Renderer:
         #WIND
         if self.wind_speed!=(0,0):
             self.pixels[0:self.surfw,0:self.surfh] = np.roll(self.pixels[0:self.surfw,0:self.surfh],self.wind_speed,axis=(0,1))
-
         return
 
     def refresh(self,robots_array):
@@ -147,7 +148,7 @@ class Renderer:
 
 def evaporate(pixels):
     pixels[...,0] = (pixels[..., 0] - 1) % 255  # Red channel
-    pixels[...,1] = (pixels[..., 1] - 1) % 255  # Red channel
+    #pixels[...,1] = (pixels[..., 1] - 1) % 255  # Red channel
     pixels[...,2] = (pixels[..., 2] - 1) % 255  # Red channel
     return pixels
 
@@ -181,7 +182,7 @@ def diffuse(pixels):
     # Generate a diffusion kernel
     diff_kernel = diffusion_kernel(kernel_size)
 
-    for i in range(3):  # Loop over RGB channels
+    for i in [0,2]:  # Loop over RGB channels
         pixels[:, :, i] = convolve(pixels[:, :, i], diff_kernel, mode='constant', cval=0.0)
 
     return pixels
@@ -257,8 +258,27 @@ def generate_maze(x,y):
     return rectangles
 
 
+def create_temperature_array(w,h):
+    # Calculate center coordinates
+    center_x = (w - 1) / 2
+    center_y = (h - 1) / 2
 
+    # Create meshgrid for distances from center
+    Y, X = np.mgrid[:h, :w]
+    distances = np.sqrt((X - center_x)**2 + (Y - center_y)**2)
 
+    # Normalize distances
+    max_distance = np.sqrt(center_x**2 + center_y**2)
+    normalized_distances = 1 - distances / max_distance
+
+    # Ensure values are within [0, 1] range
+    normalized_distances = np.clip(normalized_distances, 0, 1)
+
+    # Create gradient array
+    gradient_array = np.zeros((h, w, 4), dtype=np.uint8)
+    gradient_array[:, :, 1] = 100  *normalized_distances# Green channel
+    gradient_array[:, :, 3] = 255  # Alpha channel
+    return gradient_array
 
 
 if __name__ == "__main__":

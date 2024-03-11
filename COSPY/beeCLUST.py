@@ -1,5 +1,6 @@
 import random
 import math
+import numpy as np
 
 # CLASS FOR VIRTUAL ROBOTS
 class Robot:
@@ -12,8 +13,18 @@ class Robot:
         self.leader=False
         self.leaders_follow=False
         self.edge_mode = "Bounce"#wrap,bounce,none
+        self.state = "forward"#follow,waiting
+        self.wait_time = 0
 
     def move(self,pixels):
+        if self.wait_time>0:
+            self.wait_time-=1
+        if self.state == "waiting":
+            #Wait when encountering another robot
+            #Wait for longer if the temperature is higher
+            if self.wait_time<=120:
+                self.state="forward"
+            return
         #Go towards pheromone
         #Check 4 positions and turn more towards strongest pheromone
         if self.leader and not self.leaders_follow:#self.leader:
@@ -73,6 +84,15 @@ class Robot:
         if self.leader:
             renderer.add_pheromone(self.x,self.y)
 
+    def encounter(self,pixels):
+        if self.wait_time<=0:
+            self.state="waiting"
+            temp = pixels[int(self.x)][int(self.y)][1]
+            self.wait_time=temp*3+120
+
+    def __array__(self) -> np.ndarray:
+        return np.array([self.x, self.y])
+    
     #draw
     #move
     #disperse
@@ -88,7 +108,7 @@ class Robot:
 #Place pheromone
 #Detect objects
 #Detect pheromone
-#Detect other robots
+#Detect other robots!
 #The robot class will import/use this custom function inteface
             
 #Rules for what to do for each colour

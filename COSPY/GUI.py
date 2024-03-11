@@ -3,8 +3,14 @@ import customtkinter as CTk
 import os
 import sdl2
 from Render import *
-from Robots import *
+from beeCLUST import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
+
+
+
+def distance_between_robots(robot1, robot2):
+    return np.sqrt((robot1.x - robot2.x)**2 + (robot1.y - robot2.y)**2)
+
 
 class Algorithm_Editor(CTk.CTkFrame):
     #Constructor 
@@ -42,8 +48,8 @@ class Menu(CTk.CTkFrame):
         # Editor Buttons
         self.alg_edit_button = CTk.CTkButton(master=self,text="Algorithm Editor",corner_radius=0,fg_color="transparent")
         self.alg_edit_button.pack(side="left")
-        self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,fg_color="transparent")
-        self.env_edit_button.pack(side="left")
+        #self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,fg_color="transparent")
+        #self.env_edit_button.pack(side="left")
 
         self.start_button = CTk.CTkButton(master=self,text="⟳",corner_radius=0,width=40,command=self.master.reset,fg_color="transparent")
         self.start_button.pack(side="right")
@@ -246,6 +252,25 @@ class App(CTk.CTk):#MAIN APP WINDOW
         for r in self.robots_array:
             r.deposit(self.renderer)
             r.move(self.renderer.pixels)
+
+        # Convert each instance into a NumPy array
+        positions = np.array([np.array(instance) for instance in self.robots_array])
+        # Calculate pairwise distances using broadcasting
+        distances = np.sqrt(np.sum((positions[:, np.newaxis, :] - positions[np.newaxis, :, :])**2, axis=-1))
+        # Set threshold distance
+        threshold_distance = 5
+        # Find indices of near robots
+        near_indices = np.where((distances > 0) & (distances < threshold_distance))
+        # Concatenate the arrays
+        all_near_indices = np.concatenate(near_indices)
+        # Convert the result to a list
+        near_indices_list = all_near_indices.tolist()
+
+        for i in near_indices_list:
+            self.robots_array[i].encounter(self.renderer.pixels)
+
+
+
         #Update the screen
         self.renderer.update_environment()
 
@@ -396,6 +421,7 @@ if __name__ == "__main__":
 # Add FPS limit
 # Add saving
 # FIX MULTIPLE LEADER SYSTEM
+# ADD TEMPERATURE TOGGLE OPTION
 
 
 
