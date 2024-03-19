@@ -39,7 +39,7 @@ class Renderer:
             self.window.window = sdl2.SDL_CreateWindowFrom(embed)
         self.surf = sdl2.SDL_CreateRGBSurface(0,self.surfw,self.surfh,32,0,0,0,0)
         self.pixels = sdl2.ext.pixels3d(self.surf)
-        self.pixels+=self.temperature_array
+        #self.pixels+=self.temperature_array
 
         #Create environment surface!
         self.env_surf = sdl2.SDL_CreateRGBSurface(0,self.surfw,self.surfh,32,0,0,0,0)

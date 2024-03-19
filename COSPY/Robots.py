@@ -1,5 +1,6 @@
 import random
 import math
+import numpy as np
 
 # CLASS FOR VIRTUAL ROBOTS
 class Robot:
@@ -72,7 +73,8 @@ class Robot:
     def deposit(self,renderer):
         if self.leader:
             renderer.add_pheromone(self.x,self.y)
-
+    def __array__(self) -> np.ndarray:
+        return np.array([self.x, self.y])
     #draw
     #move
     #disperse

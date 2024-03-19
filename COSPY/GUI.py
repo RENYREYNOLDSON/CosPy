@@ -3,7 +3,8 @@ import customtkinter as CTk
 import os
 import sdl2
 from Render import *
-from beeCLUST import *
+from Robots import *
+from Graphs import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
 
 
@@ -232,19 +233,27 @@ class App(CTk.CTk):#MAIN APP WINDOW
         #############
 
 
-        ############# ENVIRONMENT EDITOR FRAME
 
 
-        #############
+        self.tabview = CTk.CTkTabview(master=self)
+        self.tabview.pack(padx=10,pady=(0,10),fill="both",expand=True)
+
+        self.tabview.add("Simulation")  # add tab at the end
+        self.tabview.add("Graphs")  # add tab at the end
 
 
 
         ############# RENDER FRAME
-        self.embed = Frame(master=self,width=2000,height=1550)
+        self.embed = Frame(master=self.tabview.tab("Simulation"),width=2000,height=1550)
         #self.embed.grid(columnspan = (2000), rowspan = 1600) # Adds grid
-        self.embed.pack(side="left",padx=30)
+        self.embed.pack()
         self.reset()
         ##############
+
+        ############# GRAPH FRAME
+        self.graphs_embed = Graph_Frame(master=self.tabview.tab("Graphs"))
+        self.graphs_embed.pack(fill="both",expand=True)
+        #############
 
 
     def refresh(self):
@@ -253,10 +262,21 @@ class App(CTk.CTk):#MAIN APP WINDOW
             r.deposit(self.renderer)
             r.move(self.renderer.pixels)
 
+
         # Convert each instance into a NumPy array
         positions = np.array([np.array(instance) for instance in self.robots_array])
+        #Find how many are in center-x
+        centre_x = self.renderer.surfw/2
+        centre_y = self.renderer.surfh/2
+        distance_threshold = 50 # Specify the distance threshold
+        num_points_at_distance = count_points_at_distance(positions, centre_x, centre_y, distance_threshold)
+        #Find how many are following!
+
+
+
         # Calculate pairwise distances using broadcasting
-        distances = np.sqrt(np.sum((positions[:, np.newaxis, :] - positions[np.newaxis, :, :])**2, axis=-1))
+        #distances = np.sqrt(np.sum((positions[:, np.newaxis, :] - positions[np.newaxis, :, :])**2, axis=-1))
+        """
         # Set threshold distance
         threshold_distance = 5
         # Find indices of near robots
@@ -268,7 +288,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
         for i in near_indices_list:
             self.robots_array[i].encounter(self.renderer.pixels)
-
+        """
 
 
         #Update the screen
@@ -280,6 +300,10 @@ class App(CTk.CTk):#MAIN APP WINDOW
             self.bar_frame.framerate_text.configure(text="Framerate: "+str(int(self.renderer.framerate)))
         #Update time step text
         self.bar_frame.timestep_text.configure(text="Time Step: "+str(self.time_step))
+
+        #Update Graphs
+        if self.time_step%120==0:
+            self.graphs_embed.update_graphs(num_points_at_distance,self.time_step,3,4)
         self.time_step+=1
 
     def close(self):
@@ -304,8 +328,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
 
         self.embed.destroy()
-        self.embed = Frame(master=self,width=width,height=height)
-        self.embed.pack(side="left",padx=30)
+        self.embed = Frame(master=self.tabview.tab("Simulation"),width=width,height=height)
+        self.embed.pack()
         self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount,evaporation_rate,diffusion_rate,wind_speed)
         self.renderer.render_robot = draw_robots
         self.bind("<space>", self.renderer.change_colour)
@@ -381,7 +405,11 @@ class App(CTk.CTk):#MAIN APP WINDOW
         #Set input values and refresh
         
     
-
+def count_points_at_distance(points, center_x, center_y, distance_threshold):
+    center = np.array([center_x, center_y])
+    distances = np.linalg.norm(points - center, axis=1)
+    num_points_at_distance = np.sum(distances <= distance_threshold)
+    return num_points_at_distance
 
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
@@ -406,28 +434,21 @@ if __name__ == "__main__":
 # Add wrap around
 
 #TODO
-# Add environment overlays and constructor! These can be any colour. A set of block objects, draw once onto surface then redraw.
-# Add a random maze generator
+# Add graphs
+# Add FPS limit
 # Add create video mode
+# Only render when shown? (quicker if not)
 # Add robot speed
 # Create a layer system to have multiple pheromones and envs
-# Add iterations system, (Use Iterations?)
 # LOOK at maths behind cosphi
 # Add all variable options
 # Add popout window
 # Add threading option for robots
 # Make it move 1 frame when paused!
-# Add robot speed
-# Add FPS limit
+# Test on smaller screen and make resizable
 # Add saving
 # FIX MULTIPLE LEADER SYSTEM
 # ADD TEMPERATURE TOGGLE OPTION
 
 
 
-# Test on smaller screen and make resizable
-# Only robot logic is in the robot code!
-        
-#Stats to show at top:
-# Time Steps
-# Cohesion maybe

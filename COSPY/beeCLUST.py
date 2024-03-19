@@ -88,7 +88,7 @@ class Robot:
         if self.wait_time<=0:
             self.state="waiting"
             temp = pixels[int(self.x)][int(self.y)][1]
-            self.wait_time=temp*3+120
+            self.wait_time=temp**1.5+120
 
     def __array__(self) -> np.ndarray:
         return np.array([self.x, self.y])
