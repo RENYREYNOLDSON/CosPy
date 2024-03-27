@@ -1,3 +1,11 @@
+########################
+########################
+########################  ROBOT TEMPLATE CODE FOR COSPY
+######################## 
+########################
+########################
+
+
 import random
 import math
 import numpy as np
@@ -13,12 +21,14 @@ class Robot:
         self.leader=False
         self.leaders_follow=False
         self.edge_mode = "Bounce"#wrap,bounce,none
+        self.angle_speed = 0.4
+        self.speed = 0.5
 
     def move(self,pixels):
         #Go towards pheromone
         #Check 4 positions and turn more towards strongest pheromone
         if self.leader and not self.leaders_follow:#self.leader:
-            self.angle+=random.uniform(-0.4,0.4)
+            self.angle+=random.uniform(-self.angle_speed,self.angle_speed)
         else:
             #Check 2 positions first
             check_left_angle = self.angle-1
@@ -34,39 +44,35 @@ class Robot:
                 px_right = pixels[check_right_x][check_right_y]
 
                 if px_left[2]>px_right[2]:
-                    self.angle-=0.4
+                    self.angle-=self.angle_speed
                 elif px_right[2]>px_left[2]:
-                    self.angle+=0.4
+                    self.angle+=self.angle_speed
                 else:
-                    self.angle+=random.uniform(-0.4,0.4)
+                    self.angle+=random.uniform(-self.angle_speed,self.angle_speed)
             except:
                 pass
             
-        new_x = self.x+math.cos(self.angle)
-        new_y = self.y+math.sin(self.angle)
+        new_x = self.x+math.cos(self.angle)*self.speed
+        new_y = self.y+math.sin(self.angle)*self.speed
         #Check if not hitting wall
-        if list(pixels[int(new_x)][int(new_y)])!=[255,255,255,255]:
-            if new_x>self.radius and new_x<len(pixels)-self.radius:
-                self.x=new_x
-            elif self.edge_mode=="Bounce":
-                self.angle+=math.pi
-            elif self.edge_mode=="Wrap":
-                #Wrap back around
-                #If above
-                self.x = new_x % (len(pixels)-1)
-                #If below
-            if new_y>self.radius and new_y<len(pixels[0])-self.radius:
-                self.y=new_y
-            elif self.edge_mode=="Bounce":
-                self.angle+=math.pi
-            elif self.edge_mode=="Wrap":
-                #Wrap back around
-                #If above
-                self.y = new_y % (len(pixels[0])-1)
-                #if below
-
-        elif self.edge_mode=="bounce":
+        if new_x>0 and new_x<len(pixels):
+            self.x=new_x
+        elif self.edge_mode=="Bounce":
             self.angle+=math.pi
+        elif self.edge_mode=="Wrap":
+            #Wrap back around
+            #If above
+            self.x = new_x % (len(pixels)-1)
+            #If below
+        if new_y>0 and new_y<len(pixels[0]):
+            self.y=new_y
+        elif self.edge_mode=="Bounce":
+            self.angle+=math.pi
+        elif self.edge_mode=="Wrap":
+            #Wrap back around
+            #If above
+            self.y = new_y % (len(pixels[0])-1)
+            #if below
 
         
 

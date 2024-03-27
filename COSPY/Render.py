@@ -1,3 +1,10 @@
+########################
+########################
+########################  RENDER CODE FOR COSPY
+######################## 
+########################
+########################
+
 
 import sdl2
 import sdl2.ext
@@ -44,12 +51,6 @@ class Renderer:
         #Create environment surface!
         self.env_surf = sdl2.SDL_CreateRGBSurface(0,self.surfw,self.surfh,32,0,0,0,0)
         self.env_pixels = sdl2.ext.pixels3d(self.env_surf)
-        if self.show_walls:
-            self.walls_array=generate_maze(self.surfw,self.surfh)
-            #Draw blocks/walls
-            for wall in self.walls_array:
-                # Create a rectangle object
-                self.env_pixels[wall[0]:wall[1], wall[2]:wall[3]] = [255,255,255,0]
 
         self.window.show()
         # Mouse Position
@@ -58,14 +59,19 @@ class Renderer:
         self.render_robot=False
 
     def update_environment(self):
-        #EVAPORATION
+
+        #1. EVAPORATION
         if self.frame_count%self.evaporation_rate == 0:
             self.pixels = evaporate(self.pixels) 
+
+        #2. DIFFUSION
         if self.frame_count%self.diffusion_rate == 0:
             self.pixels = diffuse(self.pixels)
-        #WIND
+
+        #3. WIND
         if self.wind_speed!=(0,0):
             self.pixels[0:self.surfw,0:self.surfh] = np.roll(self.pixels[0:self.surfw,0:self.surfh],self.wind_speed,axis=(0,1))
+        
         return
 
     def refresh(self,robots_array):
@@ -86,9 +92,7 @@ class Renderer:
         # Scale the original surface to fit the window size
         scaled_surf = sdl2.SDL_CreateRGBSurface(0, self.w, self.h, 32, 0, 0, 0, 0)
         sdl2.SDL_BlitScaled(self.surf, None, scaled_surf, None)
-        #Blit the environment onto the pheromone surface
-        if self.show_walls:
-            sdl2.SDL_BlitScaled(self.env_surf, None, scaled_surf, None)
+
 
         #### Draw The Robots
         if self.render_robot:
@@ -99,9 +103,8 @@ class Renderer:
                 color = sdl2.ext.Color(r.colour[0],r.colour[1],r.colour[2])
                 try:
                     draw_triangle(scaled_surf, center,100,r.angle,color)
-                except:
+                except:#Sometimes out of range so cannot draw!
                     pass
-                #sdl2.ext.fill(scaled_surf, color, vertices)
         else:
             pixels2 = sdl2.ext.pixels3d(scaled_surf)
             for r in robots_array:
@@ -245,18 +248,6 @@ def draw_triangle(surface, center, size, angle, color):
     sdl2.ext.line(surface, color, (top_vertex[0],top_vertex[1],left_vertex[0],left_vertex[1]), width=1)
     sdl2.ext.line(surface, color, (left_vertex[0],left_vertex[1],right_vertex[0],right_vertex[1]), width=1)
     sdl2.ext.line(surface, color, (right_vertex[0],right_vertex[1],top_vertex[0],top_vertex[1]), width=1)
-
-
-def generate_maze(x,y):
-    rectangles = []
-    for i in range(10):
-        x1= random.randint(0,x)
-        x2= random.randint(x1,x)
-        y1= random.randint(0,y)
-        y2= random.randint(y1,y)
-        rectangles.append([x1,x2,y1,y2])
-    return rectangles
-
 
 def create_temperature_array(w,h):
     # Calculate center coordinates
