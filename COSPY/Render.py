@@ -106,9 +106,12 @@ class Renderer:
                 except:#Sometimes out of range so cannot draw!
                     pass
         else:
-            pixels2 = sdl2.ext.pixels3d(scaled_surf)
-            for r in robots_array:
-                pixels2[int(r.x/self.scale)][int(r.y/self.scale)]=[255,255,255,255]
+            try:
+                pixels2 = sdl2.ext.pixels3d(scaled_surf)
+                for r in robots_array:
+                    pixels2[int(r.x/self.scale)][int(r.y/self.scale)]=[255,255,255,255]
+            except Exception as e:
+                print(e)
 
         # Blit the scaled surface onto the window surface
         sdl2.SDL_BlitSurface(scaled_surf, None, self.window.get_surface(), None)
