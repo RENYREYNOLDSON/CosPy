@@ -14,21 +14,8 @@ from Render import *
 from Robots import *
 from Graphs import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
+from tkinter.colorchooser import askcolor
 
-
-
-
-def distance_between_robots(robot1, robot2):
-    return np.sqrt((robot1.x - robot2.x)**2 + (robot1.y - robot2.y)**2)
-
-
-class Algorithm_Editor(CTk.CTkFrame):
-    #Constructor 
-    def __init__(self,master, **kwargs):
-        super().__init__(master, **kwargs)
-        #FRAME SETUP
-
-        
 
 class Menu(CTk.CTkFrame):
     #Constructor 
@@ -48,18 +35,8 @@ class Menu(CTk.CTkFrame):
         self.file._dropdown_menu.add_command(label="Open Test", accelerator="Ctrl+O")
         self.file._dropdown_menu.add_command(label="Save Test", accelerator="Ctrl+S",command=master.save_test)
 
-
-        #self.file._dropdown_menu.insert_separator(1)
-        #self.file._dropdown_menu.insert_separator(7)
-        #self.file._dropdown_menu.insert_separator(10)
-        #self.file._dropdown_menu.insert_separator(15)
         self.file.pack(side="left")
 
-        # Editor Buttons
-        #self.alg_edit_button = CTk.CTkButton(master=self,text="Algorithm Editor",corner_radius=0,fg_color="transparent")
-        #self.alg_edit_button.pack(side="left")
-        #self.env_edit_button = CTk.CTkButton(master=self,text="Environment Editor",corner_radius=0,fg_color="transparent")
-        #self.env_edit_button.pack(side="left")
 
         self.start_button = CTk.CTkButton(master=self,text="⟳",corner_radius=0,width=40,command=self.master.reset,fg_color="transparent")
         self.start_button.pack(side="right")
@@ -101,6 +78,30 @@ class Frame_Setup(CTk.CTkFrame):
         self.scale.insert(0,0.25)
         self.scale.grid(row=1,column=1,columnspan=2,sticky="NSEW")
 
+    def get_width(self):
+        width = int(self.width.get())
+        if width<400:
+            width = 400
+            self.width.delete(0,"end")
+            self.width.insert(0,"400")
+        elif width>1960:
+            width=1960
+            self.width.delete(0,"end")
+            self.width.insert(0,"1960")
+        return width
+    
+    def get_height(self):
+        height = int(self.height.get())
+        if height<400:
+            height = 400
+            self.height.delete(0,"end")
+            self.height.insert(0,"400")
+        elif height>1460:
+            height=1460
+            self.height.delete(0,"end")
+            self.height.insert(0,"1460")
+        return height
+
 # ENVIRONMENT SETUP FRAME
 class Environment_Setup(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
@@ -130,13 +131,13 @@ class Environment_Setup(CTk.CTkFrame):
         #Boundary Function
         self.boundary_text = CTk.CTkLabel(master=self,text="Boundary Function",padx=20,anchor="w",text_color="#a4a4a4")
         self.boundary_text.grid(row=10,column=0,sticky="NSWE")
-        self.boundary_function = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Bounce","Wrap","Stop"],command=master.master.master.master.set_boundary_function)
+        self.boundary_function = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Bounce","Wrap"],command=master.master.master.master.set_boundary_function)
         self.boundary_function.grid(row=10,column=1,columnspan=2,sticky="NSEW")
         #Temperature?
         text = CTk.CTkLabel(master=self,text="Temperature",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=11,column=0,sticky="NSEW")
-        self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="")
-        self.leaders_follow.grid(row=11,column=1,columnspan=3,sticky="EW")
+        self.temperature = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="",command=self.master.master.master.master.set_temperature)
+        self.temperature.grid(row=11,column=1,columnspan=3,sticky="EW")
         #Temp Strength
         text = CTk.CTkLabel(master=self,text="Temp Strength",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=12,column=0,sticky="NSWE")
@@ -146,32 +147,53 @@ class Environment_Setup(CTk.CTkFrame):
         #Temperature Colour
         text = CTk.CTkLabel(master=self,text="Temp Colour",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=13,column=0,sticky="NSEW")
-        self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=0)
+        self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=0,text="#00FF00",fg_color="#00FF00",command=self.change_colour)
         self.colour.grid(row=13,column=1,columnspan=2,sticky="EW")
 
+    #Open the text colour picker
+    def change_colour(self):
+        colors = askcolor(title="Temoerature Color Chooser")
+        if colors!=None:
+            self.colour.configure(fg_color=colors[1],text=str(colors[1]))
+
+    def get_colour(self):
+        hex_code = self.colour.cget("text")
+        # Remove '#' if present
+        hex_code=hex_code.replace("#","")
+        # Convert hex to RGBA
+        r = int(hex_code[0:2], 16) 
+        g = int(hex_code[2:4], 16) 
+        b = int(hex_code[4:6], 16) 
+        return [b, g, r, 255]
+    
+    def get_boundary_function(self):
+        return self.boundary_function.get()
+    
+    def get_use_temperature(self):
+        return self.temperature.get()
 
 class Robot_Setup(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
         super().__init__(master, **kwargs)
         self.grid_columnconfigure((0,1,2),weight=1,uniform="column")
         #Robot Speed
-        self.deposit_text = CTk.CTkLabel(master=self,text="Robot Speed",padx=20,anchor="w",text_color="#a4a4a4")
-        self.deposit_text.grid(row=0,column=0,sticky="NSEW")
-        self.deposit_size = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
-        self.deposit_size.insert(0,50)
-        self.deposit_size.grid(row=0,column=1,columnspan=2,sticky="NSEW")
+        self.speed_text = CTk.CTkLabel(master=self,text="Robot Speed",padx=20,anchor="w",text_color="#a4a4a4")
+        self.speed_text.grid(row=0,column=0,sticky="NSEW")
+        self.speed = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.speed.insert(0,0.5)
+        self.speed.grid(row=0,column=1,columnspan=2,sticky="NSEW")
         #Angle Change Rate
-        self.deposit_text = CTk.CTkLabel(master=self,text="Turn Speed",padx=20,anchor="w",text_color="#a4a4a4")
-        self.deposit_text.grid(row=1,column=0,sticky="NSEW")
-        self.deposit_size = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
-        self.deposit_size.insert(0,50)
-        self.deposit_size.grid(row=1,column=1,columnspan=2,sticky="NSEW")
+        self.angle_rate_text = CTk.CTkLabel(master=self,text="Turn Speed",padx=20,anchor="w",text_color="#a4a4a4")
+        self.angle_rate_text.grid(row=1,column=0,sticky="NSEW")
+        self.angle_rate = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.angle_rate.insert(0,0.4)
+        self.angle_rate.grid(row=1,column=1,columnspan=2,sticky="NSEW")
         #Randomness
-        self.deposit_text = CTk.CTkLabel(master=self,text="Randomness",padx=20,anchor="w",text_color="#a4a4a4")
-        self.deposit_text.grid(row=2,column=0,sticky="NSEW")
-        self.deposit_size = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
-        self.deposit_size.insert(0,50)
-        self.deposit_size.grid(row=2,column=1,columnspan=2,sticky="NSEW")
+        self.randomness_text = CTk.CTkLabel(master=self,text="Randomness",padx=20,anchor="w",text_color="#a4a4a4")
+        self.randomness_text.grid(row=2,column=0,sticky="NSEW")
+        self.randomness = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.randomness.insert(0,0.4)
+        self.randomness.grid(row=2,column=1,columnspan=2,sticky="NSEW")
         #Deposit Size
         self.deposit_text = CTk.CTkLabel(master=self,text="Deposit Size",padx=20,anchor="w",text_color="#a4a4a4")
         self.deposit_text.grid(row=3,column=0,sticky="NSEW")
@@ -184,49 +206,118 @@ class Robot_Setup(CTk.CTkFrame):
         self.deposit_rate = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
         self.deposit_rate.insert(0,2)
         self.deposit_rate.grid(row=4,column=1,columnspan=2,sticky="NSEW")
+        #Pheromone Detection Distance
+        self.pheromone_dist_text = CTk.CTkLabel(master=self,text="Detect Radius",padx=20,anchor="w",text_color="#a4a4a4")
+        self.pheromone_dist_text.grid(row=5,column=0,sticky="NSEW")
+        self.pheromone_dist = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.pheromone_dist.insert(0,25)
+        self.pheromone_dist.grid(row=5,column=1,columnspan=2,sticky="NSEW")
+        #Robot Detection Distance
+        self.robot_dist_text = CTk.CTkLabel(master=self,text="Collide Radius",padx=20,anchor="w",text_color="#a4a4a4")
+        self.robot_dist_text.grid(row=6,column=0,sticky="NSEW")
+        self.robot_dist = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.robot_dist.insert(0,10)
+        self.robot_dist.grid(row=6,column=1,columnspan=2,sticky="NSEW")
        #Number of robots
         self.robot_text = CTk.CTkLabel(master=self,text="Robot Count",padx=20,anchor="w",text_color="#a4a4a4")
-        self.robot_text.grid(row=5,column=0,sticky="NSEW")
+        self.robot_text.grid(row=7,column=0,sticky="NSEW")
         self.robot_count = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
         self.robot_count.insert(0,20)
-        self.robot_count.grid(row=5,column=1,columnspan=2,sticky="EW")
+        self.robot_count.grid(row=7,column=1,columnspan=2,sticky="EW")
         #Proportion of leader robots
         self.leader_text = CTk.CTkLabel(master=self,text="Leader Proportion",padx=20,anchor="w",text_color="#a4a4a4")
-        self.leader_text.grid(row=6,column=0,sticky="NSEW")
+        self.leader_text.grid(row=8,column=0,sticky="NSEW")
         self.leader = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
         self.leader.insert(0,0.1)
-        self.leader.grid(row=6,column=1,columnspan=2,sticky="EW")
+        self.leader.grid(row=8,column=1,columnspan=2,sticky="EW")
         #Pheromone Colour
-        self.leader_text = CTk.CTkLabel(master=self,text="Pheromone Colour",padx=20,anchor="w",text_color="#a4a4a4")
-        self.leader_text.grid(row=7,column=0,sticky="NSEW")
-        self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=0)
-        self.colour.grid(row=7,column=1,columnspan=2,sticky="EW")
+        self.colour_text = CTk.CTkLabel(master=self,text="Pheromone Colour",padx=20,anchor="w",text_color="#a4a4a4")
+        self.colour_text.grid(row=9,column=0,sticky="NSEW")
+        self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=1,fg_color="#FF0000",text="#FF0000",command=self.change_colour)
+        self.colour.grid(row=9,column=1,columnspan=2,sticky="EW")
+        """
         #Robot Algorithm
         self.algorithm_text = CTk.CTkLabel(master=self,text="Robot Algorithm",padx=20,anchor="w",text_color="#a4a4a4")
-        self.algorithm_text.grid(row=8,column=0,sticky="NSEW")
+        self.algorithm_text.grid(row=10,column=0,sticky="NSEW")
         self.algorithm = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Ant"])
-        self.algorithm.grid(row=8,column=1,columnspan=2,sticky="NSEW")
+        self.algorithm.grid(row=10,column=1,columnspan=2,sticky="NSEW")
         #Starting formations
-        self.formation_text = CTk.CTkLabel(master=self,text="Starting Formation",padx=20,anchor="w",text_color="#a4a4a4")
-        self.formation_text.grid(row=9,column=0,sticky="NSEW")
+        self.formation_text = CTk.CTkLabel(master=self,text="Formation",padx=20,anchor="w",text_color="#a4a4a4")
+        self.formation_text.grid(row=11,column=0,sticky="NSEW")
         self.formation = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Random","Grid","Centre"])
-        self.formation.grid(row=9,column=1,columnspan=2,sticky="NSEW")
+        self.formation.grid(row=11,column=1,columnspan=2,sticky="NSEW")
+        """
         #Collisions
-        self.formation_text = CTk.CTkLabel(master=self,text="Collisions",padx=20,anchor="w",text_color="#a4a4a4")
-        self.formation_text.grid(row=10,column=0,sticky="NSEW")
-        self.collisions = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Ignore","Stop","Stop proportional to temperature"])
+        self.collisions_text = CTk.CTkLabel(master=self,text="Collisions",padx=20,anchor="w",text_color="#a4a4a4")
+        self.collisions_text.grid(row=10,column=0,sticky="NSEW")
+        self.collisions = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Ignore","Stop","Stop linear to temperature","Stop exponential to temperature"])
         self.collisions.grid(row=10,column=1,columnspan=2,sticky="NSEW")
-
+        #Collision Stop Time
+        self.stop_text = CTk.CTkLabel(master=self,text="Stop Time",padx=20,anchor="w",text_color="#a4a4a4")
+        self.stop_text.grid(row=11,column=0,sticky="NSEW")
+        self.stop_time = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
+        self.stop_time.insert(0,100)
+        self.stop_time.grid(row=11,column=1,columnspan=2,sticky="EW")
+        #Collision IMMUNE Time
+        self.immune_text = CTk.CTkLabel(master=self,text="Immune Time",padx=20,anchor="w",text_color="#a4a4a4")
+        self.immune_text.grid(row=12,column=0,sticky="NSEW")
+        self.immune_time = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=20,border_width=1)
+        self.immune_time.insert(0,20)
+        self.immune_time.grid(row=12,column=1,columnspan=2,sticky="EW")
         #Multiple Leaders?
         text = CTk.CTkLabel(master=self,text="Multiple Leaders",padx=20,anchor="w",text_color="#a4a4a4")
-        text.grid(row=11,column=0,sticky="NSEW")
+        text.grid(row=13,column=0,sticky="NSEW")
         self.multiple_leaders = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="",command=master.master.master.master.set_multiple_leaders)
-        self.multiple_leaders.grid(row=11,column=1,columnspan=3,sticky="EW")
+        self.multiple_leaders.grid(row=13,column=1,columnspan=3,sticky="EW")
         #Leaders Follow?
         text = CTk.CTkLabel(master=self,text="Leaders Follow",padx=20,anchor="w",text_color="#a4a4a4")
-        text.grid(row=12,column=0,sticky="NSEW")
+        text.grid(row=14,column=0,sticky="NSEW")
         self.leaders_follow = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="")
-        self.leaders_follow.grid(row=12,column=1,columnspan=3,sticky="EW")
+        self.leaders_follow.grid(row=14,column=1,columnspan=3,sticky="EW")
+
+    #Open the text colour picker
+    def change_colour(self):
+        colors = askcolor(title="Pheromone Color Chooser")
+        if colors!=None:
+            self.colour.configure(fg_color=colors[1],text=str(colors[1]))
+    
+    def get_speed(self):
+        return float(self.speed.get())
+    def get_angle_rate(self):
+        return float(self.angle_rate.get())
+    def get_randomness(self):
+        return float(self.randomness.get())
+    def get_deposit_size(self):
+        return float(self.deposit_size.get())
+    def get_deposit_rate(self):
+        return float(self.deposit_rate.get())
+    def get_pheromone_dist(self):
+        return float(self.pheromone_dist.get())
+    def get_robot_dist(self):
+        return float(self.robot_dist.get())
+    def get_robot_count(self):
+        return int(self.robot_count.get())
+    def get_leader(self):
+        return float(self.leader.get())
+    def get_colour(self):
+        hex_code = self.colour.cget("text")
+        # Remove '#' if present
+        hex_code=hex_code.replace("#","")
+        # Convert hex to RGBA
+        r = int(hex_code[0:2], 16)
+        g = int(hex_code[2:4], 16)
+        b = int(hex_code[4:6], 16) 
+        return [r, g, b, 0]
+    def get_algorithm(self):
+        return self.algorithm.get()
+    def get_formation(self):
+        return self.formation.get()
+    def get_leaders_follow(self):
+        return self.leaders_follow.get()
+    def get_stop_time(self):
+        return float(self.stop_time.get())
+    def get_immune_time(self):
+        return float(self.immune_time.get())
 
 class Render_Setup(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
@@ -272,7 +363,7 @@ class Graph_Setup(CTk.CTkFrame):
         #Colour scheme
         self.colour_scheme_text = CTk.CTkLabel(master=self,text="Colour Scheme",padx=20,anchor="w",text_color="#a4a4a4")
         self.colour_scheme_text.grid(row=4,column=0,sticky="NSEW")
-        self.colour_scheme = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Light","Dark"])
+        self.colour_scheme = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["default","dark_background"],command=master.master.master.master.toggle_graph_theme)
         self.colour_scheme.grid(row=4,column=1,columnspan=2,sticky="NSEW")
         #Reset Graphs?
         self.on_reset_text = CTk.CTkLabel(master=self,text="On Reset",padx=20,anchor="w",text_color="#a4a4a4")
@@ -284,6 +375,11 @@ class Graph_Setup(CTk.CTkFrame):
         self.axis_text.grid(row=6,column=0,sticky="NSEW")
         self.show_axis = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="")
         self.show_axis.grid(row=6,column=1,columnspan=1,sticky="EW")
+        #Fixed axis?
+        self.fix_axis_text = CTk.CTkLabel(master=self,text="Fix Axis",padx=20,anchor="w",text_color="#a4a4a4")
+        self.fix_axis_text.grid(row=7,column=0,sticky="NSEW")
+        self.fix_axis = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="")
+        self.fix_axis.grid(row=7,column=1,columnspan=1,sticky="EW")
 
 
 class Recording_Setup(CTk.CTkFrame):
@@ -397,32 +493,6 @@ class Options(CTk.CTkScrollableFrame):
                                           hover=False,
                                           command=self.toggle_graph_setup)
         self.graph_setup_button.grid(padx=(10,0),sticky="ew",row=12)
-
-
-
-    def get_width(self):
-        width = int(self.frame_setup.width.get())
-        if width<400:
-            width = 400
-            self.width.delete(0,"end")
-            self.width.insert(0,"400")
-        elif width>1960:
-            width=1960
-            self.width.delete(0,"end")
-            self.width.insert(0,"1960")
-        return width
-    
-    def get_height(self):
-        height = int(self.frame_setup.height.get())
-        if height<400:
-            height = 400
-            self.height.delete(0,"end")
-            self.height.insert(0,"400")
-        elif height>1460:
-            height=1460
-            self.height.delete(0,"end")
-            self.height.insert(0,"1460")
-        return height
     
     def toggle_frame_setup(self):
         if self.frame_setup.winfo_ismapped():
@@ -482,12 +552,9 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.minsize(1600,900)
         w, h = self.winfo_screenwidth(), self.winfo_screenheight()
         self.protocol("WM_DELETE_WINDOW", self.close)
-        self.robots_array=[]
-        for i in range(10):
-            self.robots_array.append(Robot(random.randint(20,400),random.randint(20,300)))
-        self.robots_array[0].leader = True
         self.multiple_leaders=False
         self.leaders_follow=False
+        self.collide_mode="Ignore"
         self.running=False
         self.recording=False
         self.simulation_speed = 1
@@ -503,10 +570,6 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.options_frame.pack(side="right",fill="both",expand=True)
         #############
 
-        ############# ALGORITHM EDITOR FRAME
-        self.algorithm_frame = Algorithm_Editor(master=self,corner_radius=0)
-        #self.algorithm_frame.pack(side="right",fill="both")
-        #############
 
         ############# RENDER AND GRAPHS TAB FRAME
         self.tabview = CTk.CTkTabview(master=self,width=1020)
@@ -528,7 +591,28 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
 
     def refresh(self):
+        #time.sleep(0.01)
         if self.running:
+            if self.collide_mode!="Ignore":
+                #1. IF COLLISIONS STOP IS ON
+                positions = np.array([np.array(instance) for instance in self.robots_array])
+                # Define a threshold for closeness
+                threshold = self.robots_array[0].robot_dist#  # Adjust this value according to your needs
+                # Calculate pairwise Euclidean distances
+                distances = np.sqrt(np.sum((positions[:, np.newaxis] - positions[np.newaxis, :]) ** 2, axis=-1))
+                # Mask of values that are close
+                close_mask = distances < threshold
+                # Indices of close points
+                close_indices = np.argwhere(np.sum(close_mask, axis=1)>1)
+                if self.collide_mode=="Stop":#Stop for x time frames
+                    for i in close_indices:
+                        self.robots_array[i[0]].encounter()
+                elif self.collide_mode=="Stop linear to temperature":#Stop relative to temperature
+                    for i in close_indices:
+                        self.robots_array[i[0]].temperature_linear_encounter(self.renderer.env_pixels)
+                else:
+                    for i in close_indices:
+                        self.robots_array[i[0]].temperature_exponential_encounter(self.renderer.env_pixels)
 
             #UPDATE THE ROBOTS
             for r in self.robots_array:
@@ -542,37 +626,38 @@ class App(CTk.CTk):#MAIN APP WINDOW
             if self.time_step%120==0:
                 # Convert each instance into a NumPy array
                 positions = np.array([np.array(instance) for instance in self.robots_array])
-                #Find how many are in center-x
+
+                #FIND ROBOTS X DISTANCE FROM CENTER
                 centre_x = self.renderer.surfw/2
                 centre_y = self.renderer.surfh/2
                 distance_threshold = 50 # Specify the distance threshold
                 num_points_at_distance = count_points_at_distance(positions, centre_x, centre_y, distance_threshold)
-                #Find directional accuracy of the swarm as a whole
-                #Find how many are following!
 
-                # Calculate pairwise distances using broadcasting
-                #distances = np.sqrt(np.sum((positions[:, np.newaxis, :] - positions[np.newaxis, :, :])**2, axis=-1))
-                """
-                # Set threshold distance
-                threshold_distance = 5
-                # Find indices of near robots
-                near_indices = np.where((distances > 0) & (distances < threshold_distance))
-                # Concatenate the arrays
-                all_near_indices = np.concatenate(near_indices)
-                # Convert the result to a list
-                near_indices_list = all_near_indices.tolist()
 
-                for i in near_indices_list:
-                    self.robots_array[i].encounter(self.renderer.pixels)
-                """
-                self.graphs_embed.update_graphs(self.time_step,num_points_at_distance,3,4)
-                if self.tabview.get()=="Graphs":
-                    self.bar_frame.framerate_text.configure(text="Framerate: "+str("N/A"))
+                #FIND NUMBER OF ROBOTS WAITING
+                robots_waiting = 0
+                #GET ROBOTS IN PHEROMONE
+                robots_in_pheromone = 0
+                for i in self.robots_array:
+                    if i.in_pheromone(self.renderer.pixels):
+                        robots_in_pheromone+=1
+                    if i.waiting:
+                        robots_waiting+=1
+
+                #FIND DISTANCES BETWEEN ROBOTS
+                positions = np.array([np.array(instance) for instance in self.robots_array])
+                # Calculate pairwise Euclidean distances
+                distances = np.sqrt(np.sum((positions[:, np.newaxis] - positions[np.newaxis, :]) ** 2, axis=-1))
+                avg_distance = np.mean(distances)
+
+                #UPDATE GRAPH EMBEDS
+                self.graphs_embed.update_graphs(robots_waiting,num_points_at_distance,robots_in_pheromone,avg_distance)
+
             #UPDATE TIME STEP
             self.time_step+=1
 
         #UPDATE THE ACTUAL SCREEN
-        if self.time_step%self.simulation_speed==0 and self.tabview.get()=="Simulation":
+        if self.time_step%self.simulation_speed==0:
             #Refresh the render
             if self.running:
                 self.renderer.refresh(self.robots_array)
@@ -590,31 +675,50 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.destroy()
 
     def reset(self):
-        #GET VARIABLES FROM OPTIONS
+        #1. GET VARIABLES FROM OPTIONS
         self.time_step = 0
-        width = self.options_frame.get_width()
-        height = self.options_frame.get_height()
-        scale = 0.2#float(self.options_frame.scale.get())
-        robot_count = int(self.options_frame.robots_setup.robot_count.get())
-        draw_robots = self.options_frame.render_setup.draw_robots.get()
-        deposit_size = self.options_frame.robots_setup.deposit_size.get()
-        deposit_amount = self.options_frame.robots_setup.deposit_rate.get()
+        #Frame
+        width = self.options_frame.frame_setup.get_width()
+        height = self.options_frame.frame_setup.get_height()
+        scale = float(self.options_frame.frame_setup.scale.get())
+        #Environment
         evaporation_rate = int(self.options_frame.environment_setup.evaporation_rate.get())
         diffusion_rate = int(self.options_frame.environment_setup.diffusion.get())
+        use_temperature = self.options_frame.environment_setup.temperature.get()
         wind_speed = (int(self.options_frame.environment_setup.windx.get()),int(self.options_frame.environment_setup.windy.get()))
-        leaders = float(self.options_frame.robots_setup.leader.get())
+        temperature_colour = self.options_frame.environment_setup.get_colour()
+        #Robots
+        leaders = self.options_frame.robots_setup.get_leader()
+        robot_count = self.options_frame.robots_setup.get_robot_count()
+        self.collide_mode = self.options_frame.robots_setup.collisions.get()
+        pheromone_colour=self.options_frame.robots_setup.get_colour()
 
-
+        #2. CREATE NEW RENDERER
         self.embed.destroy()
         self.embed = Frame(master=self.tabview.tab("Simulation"),width=width,height=height)
         self.embed.pack()
         self.graphs_embed.reset()
-        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),int(deposit_size),deposit_amount,evaporation_rate,diffusion_rate,wind_speed)
-        self.renderer.render_robot = draw_robots
-        self.bind("<space>", self.renderer.change_colour)
+        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),evaporation_rate,diffusion_rate,wind_speed,use_temperature,temperature_colour,pheromone_colour)
+        self.renderer.render_robot = self.options_frame.render_setup.draw_robots.get()
+
+        #3. CREATE ROBOTS ARRAY
         self.robots_array=[]
         for i in range(robot_count):
-            self.robots_array.append(Robot(random.randint(1,int(width*scale)-2),random.randint(1,int(height*scale)-2)))
+            self.robots_array.append(Robot(x=random.randint(1,int(width*scale)-2),
+                                           y=random.randint(1,int(height*scale)-2),
+                                           speed=self.options_frame.robots_setup.get_speed(),
+                                           angle_speed=self.options_frame.robots_setup.get_angle_rate(),
+                                           randomness=self.options_frame.robots_setup.get_randomness(),
+                                           deposit_size=self.options_frame.robots_setup.get_deposit_size(),
+                                           deposit_rate=self.options_frame.robots_setup.get_deposit_rate(),
+                                           pheromone_dist=self.options_frame.robots_setup.get_pheromone_dist(),
+                                           robot_dist=self.options_frame.robots_setup.get_robot_dist(),
+                                           boundary_function=self.options_frame.environment_setup.get_boundary_function(),
+                                           stop_time=self.options_frame.robots_setup.get_stop_time(),
+                                           immune_time=self.options_frame.robots_setup.get_immune_time(),
+                                           use_temperature=self.options_frame.environment_setup.get_use_temperature()))
+            
+        #4. ASSIGN LEADER ROLES
         if self.multiple_leaders:
             leaders = int(leaders*robot_count)
             for i in range(leaders):
@@ -623,7 +727,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
         else:
             self.robots_array[0].leader = True
 
-
+        # RETURN
+        return 
 
     def set_draw_robots(self):
         self.renderer.render_robot = not self.renderer.render_robot
@@ -641,6 +746,9 @@ class App(CTk.CTk):#MAIN APP WINDOW
             for i in range(leaders):
                 self.robots_array[i].leader = True
         self.multiple_leaders = not self.multiple_leaders
+
+    def set_temperature(self):
+        self.renderer.use_temperature = not self.renderer.use_temperature
 
     def set_leaders_follow(self):
         self.leaders_follow = not self.leaders_follow
@@ -671,6 +779,9 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
         self.recording = not self.recording
 
+    def toggle_graph_theme(self,theme):
+        self.graphs_embed.toggle_theme(theme)
+
     #Save the Test
     def save_test(self):
         pass
@@ -691,6 +802,8 @@ def count_points_at_distance(points, center_x, center_y, distance_threshold):
     distances = np.linalg.norm(points - center, axis=1)
     num_points_at_distance = np.sum(distances <= distance_threshold)
     return num_points_at_distance
+
+
 
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
@@ -715,8 +828,13 @@ if __name__ == "__main__":
 # Make it move 1 frame when paused!
 # Make the options a scrollable frame with dropdown sections
 # FIX MULTIPLE LEADER SYSTEM
-#Make graphs stay big! 
-
+# Make graphs stay big! 
+# Add pheromone detection distance
+# Make temp on it's own layer and change colour
+# Add robot detection distance
+# Dont render so much whilst paused, FIX THIS GLITCHING! Then it'll run well
+# Fix pheromones not working properly when on graphs page
+# Fix robot movement
 
 #NOW
 #Add all options into menu
@@ -725,18 +843,21 @@ if __name__ == "__main__":
 
 
 #TODO
-# Dont render so much whilst paused, FIX THIS GLITCHING! Then it'll run well
-# Fix pheromones not working properly when on graphs page
-# Add FPS limit
-# Add limit ram
-# Fix wrap
-# Add show pheromone scanners
+# Write out temperature tests to do,LOOK at maths behind beeCLUST and phiCLUST
+# Make collide circle correct
+# Get temp working
+# Do graph menu
+# Add graph period
+# Add logging
+# Do recording
 # Add create video mode
-# Create a layer system to have multiple pheromones and envs
-# LOOK at maths behind cosphi
-# Add saving
+# List all options in the appendix, for each test. Have full table of ALL options
+        
+#FUTURE 
+# Add hover tooltips
+# Add way more options into the menu
 
-
+#THE SIMULATION SPEED FEATURE DOES NOT WORK
 
 
 

@@ -12,49 +12,86 @@ import numpy as np
 
 # CLASS FOR VIRTUAL ROBOTS
 class Robot:
-    def __init__(self,x,y):
+    def __init__(self,
+                 x,
+                 y,
+                 speed,
+                 angle_speed,
+                 randomness,
+                 deposit_size,
+                 deposit_rate,
+                 pheromone_dist,
+                 robot_dist,
+                 boundary_function,
+                 stop_time,
+                 immune_time,
+                 use_temperature):
         self.x = x
         self.y = y 
         self.angle=0
-        self.radius=25
-        self.colour=[255,255,255]
+        self.pheromone_dist = pheromone_dist
+        self.robot_dist = robot_dist
+        self.colour = [255,255,255,255]
         self.leader=False
         self.leaders_follow=False
-        self.edge_mode = "Bounce"#wrap,bounce,none
-        self.angle_speed = 0.4
-        self.speed = 0.5
+        self.waiting = 0
+        self.edge_mode = boundary_function#wrap,bounce,none
+        self.angle_speed = angle_speed
+        self.speed = speed
+        self.randomness = randomness
+        self.deposit_size = deposit_size
+        self.deposit_rate = deposit_rate
+        self.stop_time = stop_time
+        self.immune_time = immune_time
+        self.use_temperature = use_temperature
 
     def move(self,pixels):
+        if self.waiting>self.immune_time:
+            self.waiting-=1
+            return
         #Go towards pheromone
         #Check 4 positions and turn more towards strongest pheromone
         if self.leader and not self.leaders_follow:#self.leader:
-            self.angle+=random.uniform(-self.angle_speed,self.angle_speed)
+            self.angle+=random.uniform(-self.randomness,self.randomness)
         else:
             #Check 2 positions first
             check_left_angle = self.angle-1
-            check_left_x = int(self.x+math.cos(check_left_angle)*self.radius)
-            check_left_y = int(self.y+math.sin(check_left_angle)*self.radius)
+            check_left_x = int(self.x+math.cos(check_left_angle)*self.pheromone_dist)
+            check_left_y = int(self.y+math.sin(check_left_angle)*self.pheromone_dist)
 
             check_right_angle = self.angle+1
-            check_right_x = int(self.x+math.cos(check_right_angle)*self.radius)
-            check_right_y = int(self.y+math.sin(check_right_angle)*self.radius)
+            check_right_x = int(self.x+math.cos(check_right_angle)*self.pheromone_dist)
+            check_right_y = int(self.y+math.sin(check_right_angle)*self.pheromone_dist)
     
-            try:
-                px_left = pixels[check_left_x][check_left_y]
-                px_right = pixels[check_right_x][check_right_y]
 
-                if px_left[2]>px_right[2]:
-                    self.angle-=self.angle_speed
-                elif px_right[2]>px_left[2]:
-                    self.angle+=self.angle_speed
+            #Check scanners are not outside range, unless wrap
+            if self.edge_mode!="Wrap":
+                if check_left_x>len(pixels)-1 or check_left_x<0 or check_left_y>len(pixels[0])-1 or check_left_y<0:
+                    px_left = [0,0,0,0]
                 else:
-                    self.angle+=random.uniform(-self.angle_speed,self.angle_speed)
-            except:
-                pass
+                    px_left = pixels[check_left_x][check_left_y]
+                if check_right_x>len(pixels)-1 or check_right_x<0 or check_right_y>len(pixels[0])-1 or check_right_y<0:
+                    px_right = [0,0,0,0]
+                else:
+                    px_right = pixels[check_right_x][check_right_y]
+            else:
+                px_left = pixels[loop_value(check_left_x,len(pixels)-1)][loop_value(check_left_y,len(pixels[0])-1)]
+                px_right = pixels[loop_value(check_right_x,len(pixels)-1)][loop_value(check_right_y,len(pixels[0])-1)]
+
+            #IT'S ONLY DETECTING RED RIGHT NOW! Find strongest pheromone colour
+            #Create function to do detection dependent on pheromone colour
+            if self.get_strength(px_left)>self.get_strength(px_right):
+                self.angle-=self.angle_speed
+            elif self.get_strength(px_left)<self.get_strength(px_right):
+                self.angle+=self.angle_speed
+            else:
+                self.angle+=random.uniform(-self.randomness,self.randomness)
+
             
         new_x = self.x+math.cos(self.angle)*self.speed
         new_y = self.y+math.sin(self.angle)*self.speed
-        #Check if not hitting wall
+
+        #MOVING ON THE X-AXIS
         if new_x>0 and new_x<len(pixels):
             self.x=new_x
         elif self.edge_mode=="Bounce":
@@ -64,6 +101,8 @@ class Robot:
             #If above
             self.x = new_x % (len(pixels)-1)
             #If below
+
+        #MOVING ON THE Y-AXIS
         if new_y>0 and new_y<len(pixels[0]):
             self.y=new_y
         elif self.edge_mode=="Bounce":
@@ -74,69 +113,41 @@ class Robot:
             self.y = new_y % (len(pixels[0])-1)
             #if below
 
+
+        #ITERATE THE WAITING VALUE
+        if self.waiting>0:
+            self.waiting-=1
+
         
 
     def deposit(self,renderer):
         if self.leader:
-            renderer.add_pheromone(self.x,self.y)
+            renderer.add_pheromone(self.x,self.y,self.deposit_size,self.deposit_rate)
+
+    def get_strength(self,pixel):
+        return pixel[3]
+
     def __array__(self) -> np.ndarray:
         return np.array([self.x, self.y])
-    #draw
-    #move
-    #disperse
-    #detect
-    #Reproduce
-    #Can have custom variables for resources
-            
-# Focus on the robot programming interface
-# This must be for each time step, but could be written more generally maybe?
-            
-#Get left value, Get right value
-#Increment angle in direction
-#Place pheromone
-#Detect objects
-#Detect pheromone
-#Detect other robots
-#The robot class will import/use this custom function inteface
-            
-#Rules for what to do for each colour
-#Rules for how to move normally
-#Rules for objects
+    
+    def in_pheromone(self,pixels):
+        if pixels[int(self.x)][int(self.y)][3]>0:
+            return True
+        return False
 
-#Pseudocode, pheromone ordered in priority
-"""
-Agent Name: Ant
+    
+    def encounter(self):
+        if self.waiting<=0:
+            self.waiting = self.stop_time+self.immune_time
 
-iterator:
-check pheremones
-release pheromones
-move
+    def temperature_linear_encounter(self,env_pixels):
+        if self.waiting<=0:
+            self.waiting = (self.stop_time+self.immune_time)*(env_pixels[int(self.x)][int(self.y)][3]/255)#
 
-pheromone 1:
-turn angle towards = 1
+    def temperature_exponential_encounter(self,env_pixels):
+        if self.waiting<=0:
+            self.waiting = (self.stop_time+self.immune_time)*((env_pixels[int(self.x)][int(self.y)][3]/255)**2)
 
-pheromone 2 :
-turn angle away = 2
-move away
 
-pheromone 3: 
-angle and move around value
-
-{
-    name:"Ant",
-    pheromones:{
-        "(255,0,0,0)":{
-            turn_towards = 1
-        },
-        "(0,255,0,0)":{
-            turn_towards = -1
-        }
-    }
-}
-
-"""        
-
-#Use Beeclust for 1sts tests
-#Multiple pheromone types
-#Add if we can view layers
-#Add export features
+def loop_value(val,threshold):
+    return val%threshold

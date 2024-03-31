@@ -43,10 +43,10 @@ class Graph_Frame(CTk.CTkFrame):
         self.fig2, self.ax2 = plt.subplots()
         self.fig3, self.ax3 = plt.subplots()
         self.fig4, self.ax4 = plt.subplots()
-        self.ax1.title.set_text("# Robots in Pheromone")
+        self.ax1.title.set_text("# Robots Waiting")
         self.ax2.title.set_text("Cohesion")
-        self.ax3.title.set_text("Directional Accuracy")
-        self.ax4.title.set_text("Average Distance")
+        self.ax3.title.set_text("# Robots in Pheromone")
+        self.ax4.title.set_text("Average Distance Between Robots")
         
         # Create a canvas for each subplot
         self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self)
@@ -76,7 +76,7 @@ class Graph_Frame(CTk.CTkFrame):
 
         # Clear existing plots and plot new data
         self.ax1.clear()
-        self.ax1.title.set_text("# Robots in Pheromone")
+        self.ax1.title.set_text("# Robots Waiting")
         self.ax1.plot(x_values,self.data1)
         self.canvas1.draw()
         
@@ -86,12 +86,12 @@ class Graph_Frame(CTk.CTkFrame):
         self.canvas2.draw()
         
         self.ax3.clear()
-        self.ax3.title.set_text("Directional Accuracy")
+        self.ax3.title.set_text("# Robots in Pheromone")
         self.ax3.plot(x_values,self.data3)
         self.canvas3.draw()
         
         self.ax4.clear()
-        self.ax4.title.set_text("Average Distance")
+        self.ax4.title.set_text("Average Distance Between Robots")
         self.ax4.plot(x_values,self.data4)
         self.canvas4.draw()
 
@@ -100,3 +100,34 @@ class Graph_Frame(CTk.CTkFrame):
         self.data2=[]
         self.data3=[]
         self.data4=[]
+
+    def toggle_theme(self,theme):
+        plt.style.use(theme)
+        for i in self.winfo_children():
+            i.destroy()
+        print(theme)
+        self.fig1, self.ax1 = plt.subplots()
+        self.fig2, self.ax2 = plt.subplots()
+        self.fig3, self.ax3 = plt.subplots()
+        self.fig4, self.ax4 = plt.subplots()
+        self.ax1.title.set_text("# Robots Waiting")
+        self.ax2.title.set_text("Cohesion")
+        self.ax3.title.set_text("# Robots in Pheromone")
+        self.ax4.title.set_text("Average Distance Between Robots")
+        
+        # Create a canvas for each subplot
+        self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self)
+        self.canvas2 = FigureCanvasTkAgg(self.fig2, master=self)
+        self.canvas3 = FigureCanvasTkAgg(self.fig3, master=self)
+        self.canvas4 = FigureCanvasTkAgg(self.fig4, master=self)
+        
+        # Draw the canvases
+        self.canvas1.draw()
+        self.canvas2.draw()
+        self.canvas3.draw()
+        self.canvas4.draw()
+        # Pack the canvases into the frame
+        self.canvas1.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+        self.canvas2.get_tk_widget().grid(row=0, column=1, sticky="nsew")
+        self.canvas3.get_tk_widget().grid(row=1, column=0, sticky="nsew")
+        self.canvas4.get_tk_widget().grid(row=1, column=1, sticky="nsew")
