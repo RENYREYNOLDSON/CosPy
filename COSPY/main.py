@@ -5,9 +5,10 @@
 ########################
 ########################
 
-
 from tkinter import *
 import customtkinter as CTk
+import datetime
+import threading
 import os
 import sdl2
 from Render import *
@@ -15,6 +16,7 @@ from Robots import *
 from Graphs import *
 from customtkinter.windows.widgets.core_widget_classes.dropdown_menu import DropdownMenu
 from tkinter.colorchooser import askcolor
+from PIL import Image
 
 
 class Menu(CTk.CTkFrame):
@@ -22,8 +24,6 @@ class Menu(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
         super().__init__(master, **kwargs)
         #FRAME SETUP
-
-
         # File
         var = CTk.StringVar(value="File")
         self.file=CTk.CTkOptionMenu(master=self,anchor="center",variable=var,values=["File"],width=100,corner_radius=0,bg_color="transparent")
@@ -34,9 +34,7 @@ class Menu(CTk.CTkFrame):
         #self.file._dropdown_menu.insert_cascade(3,menu=menu_recent, label='Open Recent')
         self.file._dropdown_menu.add_command(label="Open Test", accelerator="Ctrl+O")
         self.file._dropdown_menu.add_command(label="Save Test", accelerator="Ctrl+S",command=master.save_test)
-
         self.file.pack(side="left")
-
 
         self.start_button = CTk.CTkButton(master=self,text="⟳",corner_radius=0,width=40,command=self.master.reset,fg_color="transparent")
         self.start_button.pack(side="right")
@@ -50,10 +48,8 @@ class Menu(CTk.CTkFrame):
         self.speed_slider.pack(side="right")
         self.speed_label = CTk.CTkLabel(master=self,text="Speed: x1")
         self.speed_label.pack(side="right")
-
         self.framerate_text = CTk.CTkLabel(master=self,text="Framerate: ",width=100,anchor="w",text_color="grey")
         self.framerate_text.pack(side="left",padx=(200,0))
-
         self.timestep_text = CTk.CTkLabel(master=self,text="Time Step: 0",text_color="grey")
         self.timestep_text.pack(side="left")
 
@@ -131,24 +127,33 @@ class Environment_Setup(CTk.CTkFrame):
         #Boundary Function
         self.boundary_text = CTk.CTkLabel(master=self,text="Boundary Function",padx=20,anchor="w",text_color="#a4a4a4")
         self.boundary_text.grid(row=10,column=0,sticky="NSWE")
-        self.boundary_function = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Bounce","Wrap"],command=master.master.master.master.set_boundary_function)
+        self.boundary_function = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Bounce","Wrap","Stop"],command=master.master.master.master.set_boundary_function)
         self.boundary_function.grid(row=10,column=1,columnspan=2,sticky="NSEW")
         #Temperature?
         text = CTk.CTkLabel(master=self,text="Temperature",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=11,column=0,sticky="NSEW")
         self.temperature = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="",command=self.master.master.master.master.set_temperature)
         self.temperature.grid(row=11,column=1,columnspan=3,sticky="EW")
+        """
         #Temp Strength
         text = CTk.CTkLabel(master=self,text="Temp Strength",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=12,column=0,sticky="NSWE")
         self.strength = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
         self.strength.insert(0,2)
         self.strength.grid(row=12,column=1,columnspan=2,sticky="NSEW")
+        """
         #Temperature Colour
         text = CTk.CTkLabel(master=self,text="Temp Colour",padx=20,anchor="w",text_color="#a4a4a4")
         text.grid(row=13,column=0,sticky="NSEW")
         self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=0,text="#00FF00",fg_color="#00FF00",command=self.change_colour)
         self.colour.grid(row=13,column=1,columnspan=2,sticky="EW")
+        #Aggregation Size
+        self.aggregation_text = CTk.CTkLabel(master=self,text="Aggregation R",padx=20,anchor="w",text_color="#a4a4a4")
+        self.aggregation_text.grid(row=14,column=0,sticky="NSWE")
+        self.aggregation = CTk.CTkEntry(master=self,corner_radius=0,placeholder_text=0.0,border_width=1)
+        self.aggregation.insert(0,400)
+        self.aggregation.grid(row=14,column=1,columnspan=2,sticky="NSEW")
+
 
     #Open the text colour picker
     def change_colour(self):
@@ -235,18 +240,6 @@ class Robot_Setup(CTk.CTkFrame):
         self.colour_text.grid(row=9,column=0,sticky="NSEW")
         self.colour = CTk.CTkButton(master=self,corner_radius=0,border_width=1,fg_color="#FF0000",text="#FF0000",command=self.change_colour)
         self.colour.grid(row=9,column=1,columnspan=2,sticky="EW")
-        """
-        #Robot Algorithm
-        self.algorithm_text = CTk.CTkLabel(master=self,text="Robot Algorithm",padx=20,anchor="w",text_color="#a4a4a4")
-        self.algorithm_text.grid(row=10,column=0,sticky="NSEW")
-        self.algorithm = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Ant"])
-        self.algorithm.grid(row=10,column=1,columnspan=2,sticky="NSEW")
-        #Starting formations
-        self.formation_text = CTk.CTkLabel(master=self,text="Formation",padx=20,anchor="w",text_color="#a4a4a4")
-        self.formation_text.grid(row=11,column=0,sticky="NSEW")
-        self.formation = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Random","Grid","Centre"])
-        self.formation.grid(row=11,column=1,columnspan=2,sticky="NSEW")
-        """
         #Collisions
         self.collisions_text = CTk.CTkLabel(master=self,text="Collisions",padx=20,anchor="w",text_color="#a4a4a4")
         self.collisions_text.grid(row=10,column=0,sticky="NSEW")
@@ -340,6 +333,7 @@ class Graph_Setup(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
         super().__init__(master, **kwargs)
         self.grid_columnconfigure((0,1,2),weight=1,uniform="column")
+        """
         #Graph 1
         self.graph1_text = CTk.CTkLabel(master=self,text="Graph 1",padx=20,anchor="w",text_color="#a4a4a4")
         self.graph1_text.grid(row=0,column=0,sticky="NSEW")
@@ -360,11 +354,13 @@ class Graph_Setup(CTk.CTkFrame):
         self.graph4_text.grid(row=3,column=0,sticky="NSEW")
         self.graph4 = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["Cohesion","# in pheromone","Pheromone Cover","# robots Stopped"])
         self.graph4.grid(row=3,column=1,columnspan=2,sticky="NSEW")
+        """
         #Colour scheme
         self.colour_scheme_text = CTk.CTkLabel(master=self,text="Colour Scheme",padx=20,anchor="w",text_color="#a4a4a4")
         self.colour_scheme_text.grid(row=4,column=0,sticky="NSEW")
         self.colour_scheme = CTk.CTkOptionMenu(master=self,corner_radius=0,bg_color="transparent",values=["default","dark_background"],command=master.master.master.master.toggle_graph_theme)
         self.colour_scheme.grid(row=4,column=1,columnspan=2,sticky="NSEW")
+        """
         #Reset Graphs?
         self.on_reset_text = CTk.CTkLabel(master=self,text="On Reset",padx=20,anchor="w",text_color="#a4a4a4")
         self.on_reset_text.grid(row=5,column=0,sticky="NSEW")
@@ -380,16 +376,17 @@ class Graph_Setup(CTk.CTkFrame):
         self.fix_axis_text.grid(row=7,column=0,sticky="NSEW")
         self.fix_axis = CTk.CTkCheckBox(master=self,corner_radius=0,border_width=1,text="")
         self.fix_axis.grid(row=7,column=1,columnspan=1,sticky="EW")
-
+        """
 
 class Recording_Setup(CTk.CTkFrame):
     def __init__(self,master, **kwargs):
         super().__init__(master, **kwargs)
+        self.directory = ""
         self.grid_columnconfigure((0,1,2),weight=1,uniform="column")
         #File Destination
         self.file_text = CTk.CTkLabel(master=self,text="File Location",padx=20,anchor="w",text_color="#a4a4a4")
         self.file_text.grid(row=0,column=0,sticky="NSEW")
-        self.file = CTk.CTkButton(master=self,corner_radius=0,border_width=0)
+        self.file = CTk.CTkButton(master=self,corner_radius=0,border_width=0,command=self.select_folder)
         self.file.grid(row=0,column=1,columnspan=2,sticky="EW")
         #Name
         self.name_text = CTk.CTkLabel(master=self,text="Name",padx=20,anchor="w",text_color="#a4a4a4")
@@ -408,8 +405,15 @@ class Recording_Setup(CTk.CTkFrame):
         #Record with graphs ATTACTHED?
         #Record with graphs also?
         #Record with logs also?
-
-
+        
+    #Select the save file
+    def select_folder(self):
+        # Select a folder and save name
+        filename=CTk.filedialog.askdirectory(title="Select Output Directory")
+        if filename=="":
+            return
+        self.directory = filename
+        self.file.configure(text=filename[-20:])
 
 class Options(CTk.CTkScrollableFrame):
     #Constructor 
@@ -559,6 +563,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
         self.recording=False
         self.simulation_speed = 1
         self.time_step=0
+        self.save_img=False
 
         ############# MENU FRAME
         self.bar_frame = Menu(master=self,corner_radius=0,fg_color="#161616")
@@ -597,7 +602,7 @@ class App(CTk.CTk):#MAIN APP WINDOW
                 #1. IF COLLISIONS STOP IS ON
                 positions = np.array([np.array(instance) for instance in self.robots_array])
                 # Define a threshold for closeness
-                threshold = self.robots_array[0].robot_dist#  # Adjust this value according to your needs
+                threshold = self.robots_array[0].robot_dist# Adjust this value according to your needs
                 # Calculate pairwise Euclidean distances
                 distances = np.sqrt(np.sum((positions[:, np.newaxis] - positions[np.newaxis, :]) ** 2, axis=-1))
                 # Mask of values that are close
@@ -615,24 +620,59 @@ class App(CTk.CTk):#MAIN APP WINDOW
                         self.robots_array[i[0]].temperature_exponential_encounter(self.renderer.env_pixels)
 
             #UPDATE THE ROBOTS
-            for r in self.robots_array:
-                r.deposit(self.renderer)
-                r.move(self.renderer.pixels)
+            if self.options_frame.render_setup.threading.get():
+                # Main loop
+                for r in self.robots_array:
+                    # Create a thread for each robot and start it
+                    thread = threading.Thread(target=process_robot, args=(r, self.renderer))
+                    thread.start()
+
+                # Wait for all threads to finish
+                for thread in threading.enumerate():
+                    if thread != threading.current_thread():
+                        thread.join()
+            else:
+                for r in self.robots_array:
+                    r.deposit(self.renderer)
+                    r.move(self.renderer.pixels)
 
             #UPDATE THE ENVIRONEMNT
             self.renderer.update_environment()
 
+            #RECORDING
+            if self.recording:
+                #COMBINE THE GRAPHS AND SURFACE INTO ONE BGR IMAGE!
+                img_tl = graph_to_BGR(self.graphs_embed.canvas1)
+                img_bl = graph_to_BGR(self.graphs_embed.canvas3)
+                img_left = np.vstack((img_tl, img_bl))  
+
+                img_tr = graph_to_BGR(self.graphs_embed.canvas2)
+                img_br = graph_to_BGR(self.graphs_embed.canvas4)
+                img_right = np.vstack((img_tr,img_br))
+
+                #Get the pysdl2 surface
+                img_surface = sdl2.ext.surface_to_ndarray(self.renderer.window.get_surface())[:, :, [2, 1, 0]]
+                img_surface = cv2.cvtColor(img_surface, cv2.COLOR_RGBA2BGR)  # Convert RGBA to BGR for OpenCV
+                width = int(self.renderer.w*(img_right.shape[0]/self.renderer.h))
+                img_surface = cv2.resize(img_surface,(width,img_right.shape[0]))
+
+                combined_img = np.hstack((img_left,img_surface,img_right))
+                self.video_writer.write(combined_img)
+
+
             #UPDATE THE GRAPHS PAGE
-            if self.time_step%120==0:
+            if self.time_step%100==0 or self.time_step==1:
+                if self.save_img and (self.time_step%1000==0 or self.time_step==1):
+                    sdl2.ext.image.save_bmp(self.renderer.window.get_surface(),path=str(self.directory)+str(self.log_name)+str(self.time_step)+".bmp",overwrite=True)
+
                 # Convert each instance into a NumPy array
                 positions = np.array([np.array(instance) for instance in self.robots_array])
 
                 #FIND ROBOTS X DISTANCE FROM CENTER
                 centre_x = self.renderer.surfw/2
                 centre_y = self.renderer.surfh/2
-                distance_threshold = 50 # Specify the distance threshold
-                num_points_at_distance = count_points_at_distance(positions, centre_x, centre_y, distance_threshold)
-
+                distance_threshold = self.renderer.aggregation_radius*self.renderer.scale # Specify the distance threshold
+                num_points_at_distance = count_points_at_distance2(positions, centre_x, centre_y, distance_threshold)
 
                 #FIND NUMBER OF ROBOTS WAITING
                 robots_waiting = 0
@@ -641,8 +681,11 @@ class App(CTk.CTk):#MAIN APP WINDOW
                 for i in self.robots_array:
                     if i.in_pheromone(self.renderer.pixels):
                         robots_in_pheromone+=1
-                    if i.waiting:
+                    if i.waiting>0:
                         robots_waiting+=1
+
+                #Proportion of robots in pheromone!!!!!
+                robots_in_pheromone = robots_in_pheromone/len(self.robots_array)
 
                 #FIND DISTANCES BETWEEN ROBOTS
                 positions = np.array([np.array(instance) for instance in self.robots_array])
@@ -652,7 +695,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
                 #UPDATE GRAPH EMBEDS
                 self.graphs_embed.update_graphs(robots_waiting,num_points_at_distance,robots_in_pheromone,avg_distance)
-
+                log_path = str(self.directory)+str(self.log_name)
+                self.graphs_embed.update_log(log_path,robots_waiting,num_points_at_distance,robots_in_pheromone,avg_distance)
             #UPDATE TIME STEP
             self.time_step+=1
 
@@ -670,11 +714,16 @@ class App(CTk.CTk):#MAIN APP WINDOW
 
 
     def close(self):
+        try:
+            self.video_writer.release()
+        except:
+            pass
         self.running=True
         self.renderer.close()
         self.destroy()
 
     def reset(self):
+
         #1. GET VARIABLES FROM OPTIONS
         self.time_step = 0
         #Frame
@@ -687,20 +736,32 @@ class App(CTk.CTk):#MAIN APP WINDOW
         use_temperature = self.options_frame.environment_setup.temperature.get()
         wind_speed = (int(self.options_frame.environment_setup.windx.get()),int(self.options_frame.environment_setup.windy.get()))
         temperature_colour = self.options_frame.environment_setup.get_colour()
+        aggregation_radius = int(self.options_frame.environment_setup.aggregation.get())
         #Robots
         leaders = self.options_frame.robots_setup.get_leader()
+        leaders_follow = self.options_frame.robots_setup.get_leaders_follow()
         robot_count = self.options_frame.robots_setup.get_robot_count()
         self.collide_mode = self.options_frame.robots_setup.collisions.get()
         pheromone_colour=self.options_frame.robots_setup.get_colour()
+        #Logs
+        self.log_name = self.options_frame.recording_setup.name.get()
+        if self.log_name=="":
+            self.log_name="default"
+        self.directory = self.options_frame.recording_setup.directory
+        if self.directory!="":
+            self.directory+="/"
+
 
         #2. CREATE NEW RENDERER
         self.embed.destroy()
         self.embed = Frame(master=self.tabview.tab("Simulation"),width=width,height=height)
         self.embed.pack()
         self.graphs_embed.reset()
-        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),evaporation_rate,diffusion_rate,wind_speed,use_temperature,temperature_colour,pheromone_colour)
+        self.renderer = Renderer(width,height,scale,self.embed.winfo_id(),evaporation_rate,diffusion_rate,wind_speed,use_temperature,temperature_colour,pheromone_colour,aggregation_radius)
         self.renderer.render_robot = self.options_frame.render_setup.draw_robots.get()
 
+
+        
         #3. CREATE ROBOTS ARRAY
         self.robots_array=[]
         for i in range(robot_count):
@@ -716,7 +777,8 @@ class App(CTk.CTk):#MAIN APP WINDOW
                                            boundary_function=self.options_frame.environment_setup.get_boundary_function(),
                                            stop_time=self.options_frame.robots_setup.get_stop_time(),
                                            immune_time=self.options_frame.robots_setup.get_immune_time(),
-                                           use_temperature=self.options_frame.environment_setup.get_use_temperature()))
+                                           use_temperature=self.options_frame.environment_setup.get_use_temperature(),
+                                           leaders_follow=leaders_follow))
             
         #4. ASSIGN LEADER ROLES
         if self.multiple_leaders:
@@ -774,13 +836,25 @@ class App(CTk.CTk):#MAIN APP WINDOW
         if self.recording:
             self.bar_frame.record_button._fg_color="transparent"
             #Save video
+            self.video_writer.release()
         else:
             self.bar_frame.record_button._fg_color="red"
+            # Initialize video writer
+            #vid_w,vid_h = self.graphs_embed.canvas1.get_width_height()
+            width2 = int(self.renderer.w*(960/self.renderer.h))
+            self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')  #Codec for MPEG-4
+            #Add time into name of file, if name not set
+            current_time = datetime.datetime.now().strftime("%H%M%S")
+            name = str(self.directory)+str(self.log_name)+str(current_time)+'.mp4'
+            self.video_writer = cv2.VideoWriter(name, self.fourcc, 60.0, (1280+width2, 960))
 
         self.recording = not self.recording
 
     def toggle_graph_theme(self,theme):
         self.graphs_embed.toggle_theme(theme)
+
+
+        
 
     #Save the Test
     def save_test(self):
@@ -803,7 +877,23 @@ def count_points_at_distance(points, center_x, center_y, distance_threshold):
     num_points_at_distance = np.sum(distances <= distance_threshold)
     return num_points_at_distance
 
+def count_points_at_distance2(points, center_x, center_y, distance_threshold):
+    num_points_at_distance = 0 
+    for p in points:
+        if math.sqrt((center_x-p[0])**2+(center_y-p[1])**2)<=distance_threshold:
+            num_points_at_distance+=1
+    return num_points_at_distance
 
+#Used for CPU threading of robots
+def process_robot(robot, renderer):
+    robot.deposit(renderer)
+    robot.move(renderer.pixels)
+
+def graph_to_BGR(canvas):
+    buffer = canvas.buffer_rgba()
+    img = np.array(buffer)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)  # Convert RGBA to BGR for OpenCV
+    return img
 
 if __name__ == "__main__":
     title_font = ("David",20,"bold")
@@ -819,7 +909,7 @@ if __name__ == "__main__":
         app.refresh()
         app.update()
 
-#DONE
+# DONE:
 # Optimize drawing of pheromones so that the size can be changed
 # Add robots
 # Add simulation speed
@@ -835,29 +925,16 @@ if __name__ == "__main__":
 # Dont render so much whilst paused, FIX THIS GLITCHING! Then it'll run well
 # Fix pheromones not working properly when on graphs page
 # Fix robot movement
-
-#NOW
-#Add all options into menu
-#Create a new reset function, make it so saving and loading will be easy
-
-
-
-#TODO
-# Write out temperature tests to do,LOOK at maths behind beeCLUST and phiCLUST
-# Make collide circle correct
-# Get temp working
-# Do graph menu
-# Add graph period
-# Add logging
-# Do recording
-# Add create video mode
-# List all options in the appendix, for each test. Have full table of ALL options
-        
+# Add recording system
+# Add CPU threading
+# Add aggregation area size option
+# Make all exports go to same file
+# Make exporting of logs and stuff use correct names!   
 #FUTURE 
 # Add hover tooltips
 # Add way more options into the menu
 
-#THE SIMULATION SPEED FEATURE DOES NOT WORK
+
 
 
 

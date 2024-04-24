@@ -5,7 +5,6 @@
 ########################
 ########################
 
-
 import random
 import math
 import numpy as np
@@ -25,7 +24,8 @@ class Robot:
                  boundary_function,
                  stop_time,
                  immune_time,
-                 use_temperature):
+                 use_temperature,
+                 leaders_follow):
         self.x = x
         self.y = y 
         self.angle=0
@@ -33,7 +33,7 @@ class Robot:
         self.robot_dist = robot_dist
         self.colour = [255,255,255,255]
         self.leader=False
-        self.leaders_follow=False
+        self.leaders_follow=leaders_follow
         self.waiting = 0
         self.edge_mode = boundary_function#wrap,bounce,none
         self.angle_speed = angle_speed
