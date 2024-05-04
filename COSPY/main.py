@@ -509,42 +509,42 @@ class Options(CTk.CTkScrollableFrame):
     def toggle_environment_setup(self):
         if self.environment_setup.winfo_ismapped():
             self.environment_setup.grid_forget()
-            self.environment_setup.configure(text="▶ Environment Setup")
+            self.environment_setup_button.configure(text="▶ Environment Setup")
         else:
             self.environment_setup.grid(row=5,sticky="ew",columnspan=1,padx=(10,0))
-            self.environment_setup.configure(text="▼ Environment Setup")
+            self.environment_setup_button.configure(text="▼ Environment Setup")
 
     def toggle_robots_setup(self):
         if self.robots_setup.winfo_ismapped():
             self.robots_setup.grid_forget()
-            self.robots_setup.configure(text="▶ Robots")
+            self.robots_setup_button.configure(text="▶ Robots")
         else:
             self.robots_setup.grid(row=7,sticky="ew",columnspan=1,padx=(10,0))
-            self.robots_setup.configure(text="▼ Robots")
+            self.robots_setup_button.configure(text="▼ Robots")
 
     def toggle_render_setup(self):
         if self.render_setup.winfo_ismapped():
             self.render_setup.grid_forget()
-            self.render_setup.configure(text="▶ Render Settings")
+            self.render_setup_button.configure(text="▶ Render Settings")
         else:
             self.render_setup.grid(row=9,sticky="ew",columnspan=1,padx=(10,0))
-            self.render_setup.configure(text="▼ Render Settings")
+            self.render_setup_button.configure(text="▼ Render Settings")
 
     def toggle_recording_setup(self):
         if self.recording_setup.winfo_ismapped():
             self.recording_setup.grid_forget()
-            self.recording_setup.configure(text="▶ Recording Settings")
+            self.recording_setup_button.configure(text="▶ Recording Settings")
         else:
             self.recording_setup.grid(row=11,sticky="ew",columnspan=1,padx=(10,0))
-            self.recording_setup.configure(text="▼ Recording Settings")
+            self.recording_setup_button.configure(text="▼ Recording Settings")
 
     def toggle_graph_setup(self):
         if self.graph_setup.winfo_ismapped():
             self.graph_setup.grid_forget()
-            self.graph_setup.configure(text="▶ Graphing & Logging Settings")
+            self.graph_setup_button.configure(text="▶ Graphing & Logging Settings")
         else:
             self.graph_setup.grid(row=13,sticky="ew",columnspan=1,padx=(10,0))
-            self.graph_setup.configure(text="▼ Graphing & Logging Settings")
+            self.graph_setup_button.configure(text="▼ Graphing & Logging Settings")
 
 
 
@@ -929,8 +929,9 @@ if __name__ == "__main__":
 # Add CPU threading
 # Add aggregation area size option
 # Make all exports go to same file
-# Make exporting of logs and stuff use correct names!   
-#FUTURE 
+# Make exporting of logs and stuff use correct names!
+
+#FUTURE: 
 # Add hover tooltips
 # Add way more options into the menu
 

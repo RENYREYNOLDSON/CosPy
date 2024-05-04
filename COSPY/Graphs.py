@@ -36,7 +36,7 @@ class Graph_Frame(CTk.CTkFrame):
         self.fig3, self.ax3 = plt.subplots()
         self.fig4, self.ax4 = plt.subplots()
         self.ax1.title.set_text("# Robots Waiting")
-        self.ax2.title.set_text("Cohesion")
+        self.ax2.title.set_text("Aggregation")
         self.ax3.title.set_text("# Robots in Pheromone")
         self.ax4.title.set_text("Average Distance Between Robots")
         
@@ -73,7 +73,7 @@ class Graph_Frame(CTk.CTkFrame):
         self.canvas1.draw()
         
         self.ax2.clear()
-        self.ax2.title.set_text("Cohesion")
+        self.ax2.title.set_text("Aggregation")
         self.ax2.plot(x_values,self.data2)
         self.canvas2.draw()
         
