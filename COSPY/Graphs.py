@@ -5,7 +5,6 @@
 ########################
 ########################
 
-
 import matplotlib.animation as animation
 from matplotlib import pyplot as plt
 from matplotlib import style
@@ -14,15 +13,8 @@ import customtkinter as CTk
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-
-
-#GRAPHS TO SHOW
-#Cohesion
-#% in pheromone
-#Global pheromone amount
-#Pheromone cover
-#Amount in area
-#Number of robots stopped
+import csv
+import os
 
 class Graph_Frame(CTk.CTkFrame):
     #Constructor 
@@ -44,7 +36,7 @@ class Graph_Frame(CTk.CTkFrame):
         self.fig3, self.ax3 = plt.subplots()
         self.fig4, self.ax4 = plt.subplots()
         self.ax1.title.set_text("# Robots Waiting")
-        self.ax2.title.set_text("Cohesion")
+        self.ax2.title.set_text("Aggregation")
         self.ax3.title.set_text("# Robots in Pheromone")
         self.ax4.title.set_text("Average Distance Between Robots")
         
@@ -72,7 +64,7 @@ class Graph_Frame(CTk.CTkFrame):
         self.data3.append(value3)
         self.data4.append(value4)
 
-        x_values=[120 * i for i in range(len(self.data1))]
+        x_values=[100 * i for i in range(len(self.data1))]
 
         # Clear existing plots and plot new data
         self.ax1.clear()
@@ -81,7 +73,7 @@ class Graph_Frame(CTk.CTkFrame):
         self.canvas1.draw()
         
         self.ax2.clear()
-        self.ax2.title.set_text("Cohesion")
+        self.ax2.title.set_text("Aggregation")
         self.ax2.plot(x_values,self.data2)
         self.canvas2.draw()
         
@@ -94,6 +86,31 @@ class Graph_Frame(CTk.CTkFrame):
         self.ax4.title.set_text("Average Distance Between Robots")
         self.ax4.plot(x_values,self.data4)
         self.canvas4.draw()
+
+
+
+    #UPDATE LOG FILE!!!
+    def update_log(self,filename,robots_waiting,num_points_at_distance,robots_in_pheromone,avg_distance):
+        #Update the CSV with the given filename#
+        #Each row will be a timestep, len of data/100
+        if os.path.exists(filename+".csv"):
+            # Open input CSV file for reading
+            with open(filename+".csv", 'r', newline='') as csvfile:
+                reader = csv.reader(csvfile)
+                # Read the data
+                data = list(reader)
+        else:
+            data=[]
+
+        new_line = [len(self.data1)*100,num_points_at_distance,robots_waiting,avg_distance,robots_in_pheromone]
+        data.append(new_line)
+
+        # Open output CSV file for writing
+        if filename!="/":
+            with open(filename+".csv", 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                # Write the modified data back to the CSV file
+                writer.writerows(data)
 
     def reset(self):
         self.data1=[]
